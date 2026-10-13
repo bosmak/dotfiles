@@ -1,0 +1,57 @@
+---
+- name: Run pre-install commands
+  ansible.builtin.command: "{{ item.command }}"
+  args:
+    chdir: "{{ item.chdir | default(omit) }}"
+    creates: "{{ item.creates | default(omit) }}"
+  loop: "{{ pre_install_commands }}"
+  when: pre_install_commands | length > 0
+  become: "{{ item.become | default(false) }}"
+
+- name: Run dnf tasks
+  ansible.builtin.import_tasks: dnf.yml
+  when:
+    - ansible_system == 'Linux'
+    - ansible_pkg_mgr == 'dnf'
+
+- name: Run brew tasks
+  ansible.builtin.import_tasks: brew.yml
+  when: ansible_system == 'Darwin'
+
+- name: Add flatpak repos
+  community.general.flatpak_remote:
+    name: "{{ item.name }}"
+    flatpakrepo_url: "{{ item.url }}"
+    state: present
+  loop: "{{ flatpak_repos }}"
+  when:
+    - ansible_system == 'Linux'
+    - flatpak_repos | length > 0
+
+- name: Install flatpak apps
+  community.general.flatpak:
+    name: "{{ item }}"
+    remote: "{{ flatpak_repos[0].name | default('flathub') }}"
+    state: present
+    method: system
+  loop: "{{ flatpak }}"
+  when:
+    - ansible_system == 'Linux'
+    - flatpak | length > 0
+
+- name: Run GitHub tasks
+  ansible.builtin.import_tasks: github.yml
+
+- name: Run keyboard/ibus tasks
+  ansible.builtin.import_tasks: keyboard.yml
+  when: ansible_system == 'Linux'
+
+- name: Run post-install commands
+  ansible.builtin.command: "{{ item.command }}"
+  args:
+    chdir: "{{ item.chdir | default(omit) }}"
+    creates: "{{ item.creates | default(omit) }}"
+  loop: "{{ post_install_commands }}"
+  when: post_install_commands | length > 0
+  become: "{{ item.become | default(false) }}"
+  changed_when: false

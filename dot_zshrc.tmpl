@@ -1,0 +1,31 @@
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt HIST_IGNORE_DUPS SHARE_HISTORY APPEND_HISTORY EXTENDED_HISTORY INC_APPEND_HISTORY_TIME
+
+# Load ZAP
+[ -f "${XDG_DATA_HOME:-$HOME/.local/share}/zap/zap.zsh" ] && source "${XDG_DATA_HOME:-$HOME/.local/share}/zap/zap.zsh"
+autoload -U compinit; compinit
+
+# Plugins
+plug "Aloxaf/fzf-tab"
+plug "zsh-users/zsh-autosuggestions"
+plug "zsh-users/zsh-history-substring-search"
+plug "zsh-users/zsh-syntax-highlighting"
+
+# Binds
+bindkey '^[[A' history-substring-search-up
+bindkey '^[[B' history-substring-search-down
+
+{{ if eq .chezmoi.os "linux" -}}
+# Theme
+[[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/dots/dank-palette.zsh" ]] \
+  && source "${XDG_CONFIG_HOME:-$HOME/.config}/dots/dank-palette.zsh"
+{{ end -}}
+
+# Load Starhip
+ZLE_RPROMPT_INDENT=0
+eval "$(starship init zsh)"
+
+# Activate Mise
+eval "$(mise activate zsh)"

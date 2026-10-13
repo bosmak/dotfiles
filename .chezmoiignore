@@ -1,0 +1,11 @@
+# Repo support files — not deployed to $HOME
+README.md
+tools
+ansible
+mise.toml
+.pre-commit-config.yaml
+
+# Linux-only
+{{ if ne .chezmoi.os "linux" }}
+.config/dots/dank-palette.zsh
+{{ end }}

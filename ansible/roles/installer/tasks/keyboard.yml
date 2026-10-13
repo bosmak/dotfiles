@@ -1,0 +1,34 @@
+---
+- name: Set keyboard layout
+  ansible.builtin.shell: |
+    current=$(dconf read /org/gnome/desktop/input-sources/sources 2>/dev/null || echo "")
+    new="[('xkb', '{{ keyboard.layout }}{% if keyboard.variant | default('') != '' %}+{{ keyboard.variant }}{% endif %}')]"
+    [ "$current" = "$new" ] || dconf write /org/gnome/desktop/input-sources/sources "$new"
+  when: keyboard.layout is defined
+  become: true
+  become_user: "{{ ansible_user_id }}"
+  changed_when: false
+
+- name: Set keyboard options
+  ansible.builtin.shell: |
+    if [ {{ keyboard.options | default([]) | length }} -eq 0 ]; then
+      new='@as []'
+    else
+      new="[{{ keyboard.options | join(', ') }}]"
+    fi
+    current=$(dconf read /org/gnome/desktop/input-sources/xkb-options 2>/dev/null || echo '')
+    [ "$current" = "$new" ] || dconf write /org/gnome/desktop/input-sources/xkb-options "$new"
+  when: keyboard is defined
+  become: true
+  become_user: "{{ ansible_user_id }}"
+  changed_when: false
+
+- name: Set ibus as input source
+  ansible.builtin.shell: |
+    current=$(dconf read /org/gnome/desktop/input-sources/sources 2>/dev/null || echo "")
+    new="[('ibus', '{{ keyboard.ibus_engine }}')]"
+    [ "$current" = "$new" ] || dconf write /org/gnome/desktop/input-sources/sources "$new"
+  when: keyboard.ibus_engine | default('') != ''
+  become: true
+  become_user: "{{ ansible_user_id }}"
+  changed_when: false

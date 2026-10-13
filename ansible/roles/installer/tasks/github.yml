@@ -1,0 +1,75 @@
+---
+- name: Clone GitHub repositories
+  ansible.builtin.git:
+    repo: "https://github.com/{{ item.repository }}.git"
+    dest: "{{ item.dest }}"
+    depth: "{{ item.depth | default(1) }}"
+    update: false
+  loop: "{{ github_repositories }}"
+  when: github_repositories | length > 0
+  changed_when: false
+
+- name: Install GitHub release binaries
+  when: github_release_binaries | length > 0
+  block:
+    - name: Download release asset
+      ansible.builtin.get_url:
+        url: "https://github.com/{{ item.repository }}/releases/download/{{ item.tag }}/{{ item.assets[ansible_architecture].filename }}"
+        dest: "/tmp/{{ item.assets[ansible_architecture].filename }}"
+        checksum: "sha256:{{ item.assets[ansible_architecture].sha256 }}"
+        mode: '0644'
+      loop: "{{ github_release_binaries }}"
+      when:
+        - github_release_binaries | length > 0
+        - item.assets[ansible_architecture] is defined
+        - not (item.link_name | default('') | length > 0
+              and item.dest | default('') | length > 0
+              and (__check_binary.stat.exists | default(false)))
+      vars:
+        __check_binary:
+          ansible.builtin.stat:
+            path: "{{ ansible_env.HOME }}/.local/bin/{{ item.link_name | default('') }}"
+
+    - name: Create extract directory
+      ansible.builtin.file:
+        path: "/tmp/{{ item.name }}-{{ item.version }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ github_release_binaries }}"
+      when:
+        - github_release_binaries | length > 0
+        - item.assets[ansible_architecture] is defined
+
+    - name: Extract release asset
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ item.assets[ansible_architecture].filename }}"
+        dest: "/tmp/{{ item.name }}-{{ item.version }}"
+        remote_src: true
+        creates: "/tmp/{{ item.name }}-{{ item.version }}/{{ item.binary_path }}"
+      loop: "{{ github_release_binaries }}"
+      when:
+        - github_release_binaries | length > 0
+        - item.assets[ansible_architecture] is defined
+
+    - name: Create install directory
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/.local/bin"
+        state: directory
+        mode: '0755'
+      when: github_release_binaries | length > 0
+
+    - name: Install binary
+      ansible.builtin.copy:
+        src: "/tmp/{{ item.name }}-{{ item.version }}/{{ item.binary_path }}"
+        dest: "{{ ansible_env.HOME }}/.local/bin/{{ item.link_name }}"
+        mode: '0755'
+        remote_src: true
+      loop: "{{ github_release_binaries }}"
+      when:
+        - github_release_binaries | length > 0
+        - item.assets[ansible_architecture] is defined
+        - not (__final_binary.stat.exists | default(false))
+      vars:
+        __final_binary:
+          ansible.builtin.stat:
+            path: "{{ ansible_env.HOME }}/.local/bin/{{ item.link_name }}"

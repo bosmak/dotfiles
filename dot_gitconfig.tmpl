@@ -1,0 +1,16 @@
+[init]
+	defaultBranch = main
+
+[user]
+	email = {{ .email | quote }}
+	name  = {{ .name | quote }}
+
+[core]
+	editor = vim
+	pager = less -R
+
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true

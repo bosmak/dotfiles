@@ -1,0 +1,5 @@
+[tools]
+chezmoi = "latest"
+codex   = "latest"
+glow    = "latest"
+pi      = "latest"

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Re-runs the ansible playbook whenever files under ansible/ change.
+# The hash below is recomputed by chezmoi at every apply; when the
+# hash differs from the previously-rendered content, chezmoi re-executes
+# this script. Runs the playbook with --ask-become-pass so sudo can
+# prompt interactively on a TTY.
+# Ansible tree hash: {{ output "bash" "-c" (printf "cd %s && find ansible -type f -not -path '*/.ansible/*' -not -path '*/__pycache__/*' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1" .chezmoi.sourceDir) | trim }}
+
+set -euo pipefail
+
+ANSIBLE_DIR="{{ .chezmoi.sourceDir }}/ansible"
+
+if ! command -v ansible-playbook >/dev/null 2>&1; then
+    echo "ansible-playbook not found; skipping (run tools/chezmoi-init.sh to install prereqs)"
+    exit 0
+fi
+
+if [[ ! -d "$ANSIBLE_DIR" ]]; then
+    echo "ansible/ not found at $ANSIBLE_DIR; skipping"
+    exit 0
+fi
+
+OS_ID="{{ .chezmoi.osRelease.id | default "linux" }}"
+ROLE="{{ .role | default "personal" }}"
+PLAYBOOK="$ANSIBLE_DIR/playbooks/${OS_ID}-${ROLE}.yml"
+
+if [[ ! -f "$PLAYBOOK" ]]; then
+    echo "Playbook not found: $PLAYBOOK (skipping)"
+    exit 0
+fi
+
+# --ask-become-pass prompts for the sudo password on a TTY.
+# In non-interactive contexts (cron, scripts), the user must have
+# NOPASSWD sudo configured.
+ANSIBLE_BECOME_FLAGS=""
+if [[ -r /dev/tty ]] 2>/dev/null; then
+    ANSIBLE_BECOME_FLAGS="--ask-become-pass"
+fi
+
+echo "==> Running ansible: $PLAYBOOK"
+(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS "playbooks/${OS_ID}-${ROLE}.yml")

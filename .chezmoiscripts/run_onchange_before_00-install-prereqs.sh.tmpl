@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Re-installs prereqs on changes to this list. On the bootstrap path,
+# tools/chezmoi-init.sh handles this; this script is a safety net for
+# re-applies where the prereqs list changed.
+# Prereqs hash: {{ output "bash" "-c" "printf '%s\n' git curl jq unzip ansible-core mise gum | sha256sum | cut -d' ' -f1" | trim }}
+
+set -euo pipefail
+
+if [[ ! -r /dev/tty ]] 2>/dev/null; then
+    exit 0
+fi
+
+declare -A PKG_BIN=(
+    [ansible-core]=ansible-playbook
+)
+
+NEED_INSTALL=()
+for pkg in git curl jq unzip ansible-core mise gum; do
+    bin="${PKG_BIN[$pkg]:-$pkg}"
+    if ! command -v "$bin" >/dev/null 2>&1; then
+        NEED_INSTALL+=("$pkg")
+    fi
+done
+
+if [ ${#NEED_INSTALL[@]} -eq 0 ]; then
+    exit 0
+fi
+
+echo "==> Installing missing prereqs: ${NEED_INSTALL[*]}"
+sudo dnf install -y "${NEED_INSTALL[@]}"

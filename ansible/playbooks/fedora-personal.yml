@@ -1,0 +1,89 @@
+---
+- name: Fedora personal setup
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  roles:
+    - role: installer
+      vars:
+        pre_install_commands:
+          - command: "curl -fsSL https://yum.enpass.io/enpass-yum.repo -o /etc/yum.repos.d/enpass-yum.repo"
+            creates: /etc/yum.repos.d/enpass-yum.repo
+            become: true
+        extra_repos:
+          - jdxcode/mise
+          - atim/starship
+          - yalter/niri
+        pre_packages:
+          - rpmfusion-free-release
+          - rpmfusion-nonfree-release
+          - python3-dnf-plugin-versionlock
+        packages:
+          - firefox
+          - vim
+          - fd
+          - wget
+          - power-profiles-daemon
+          - cups-pk-helper
+          - kf6-kimageformats
+          - i2c-tools
+          - adw-gtk3-theme
+          - xdg-user-dirs
+          - xdg-utils
+          - flatpak
+          - zsh
+          - ripgrep
+          - steam
+          - steam-devices
+          - gamemode
+          - ibus
+          - ibus-gtk2
+          - ibus-gtk3
+          - ibus-gtk4
+          - ibus-panel
+          - ibus-setup
+          - ibus-wayland
+          - mise
+          - starship
+        flatpak_repos:
+          - name: flathub
+            url: https://dl.flathub.org/repo/flathub.flatpakrepo
+        flatpak:
+          - com.discordapp.Discord
+          - org.freecad.FreeCAD
+        packages_replace:
+          - old: ffmpeg-free
+            new: ffmpeg-full
+        locked_packages:
+          - name: xwayland-satellite
+            version: "0.8.1-1.fc44"
+            reason: "0.8.2 regresses Steam's X11 override-redirect popups under niri (Supreeeme/xwayland-satellite#468); 0.8.1-1 is the last release that works"
+        github_repositories:
+          - name: zap
+            repository: zap-zsh/zap
+            dest: "{{ ansible_env.HOME }}/.local/share/zap"
+            depth: 1
+            update: false
+        github_release_binaries:
+          - name: clip-bridge
+            repository: noctisynth/clip-bridge
+            version: "0.1.9"
+            tag: clip-bridge-v0.1.9
+            binary_path: clip-bridge
+            link_name: clip-bridge
+            assets:
+              x86_64:
+                filename: clip-bridge-0.1.9-x86_64.tar.gz
+                sha256: 26266f794be2b7fe1d9cf3d3a58b28939e0b0cd8484a2fd1fa375fe4b4e620d1
+        keyboard:
+          layout: us
+          model: pc105
+          variant: alt-intl
+          options: []
+          ibus_engine: xkb:us:alt-intl:eng
+        post_install_commands:
+          - command: mise trust
+            chdir: "{{ ansible_env.HOME }}"
+          - command: mise install --yes
+            chdir: "{{ ansible_env.HOME }}"

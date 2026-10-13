@@ -1,0 +1,53 @@
+repos:
+  - repo: https://github.com/bosmak/chezmoi-hooks
+    rev: v0.1.0
+    hooks:
+      - id: chezmoi-preserve-templates
+        exclude: ^\.chezmoiscripts/
+      - id: chezmoi-enforce-portability
+      - id: chezmoi-preserve-lines
+        args:
+          - '--preserve=dot_pi/agent/settings.json:^\s*"defaultProvider":'
+          - '--preserve=dot_pi/agent/settings.json:^\s*"defaultModel":'
+          - '--preserve=dot_pi/agent/settings.json:^\s*"defaultThinkingLevel":'
+  - repo: https://github.com/betterleaks/betterleaks
+    rev: v1.7.1
+    hooks:
+      - id: betterleaks
+
+  - repo: local
+    hooks:
+      - id: ansible-syntax-check
+        name: Ansible syntax check
+        entry: bash -c 'cd ansible && ansible-playbook playbook.yml --syntax-check'
+        language: system
+        pass_filenames: false
+        files: ^ansible/.*\.(yml|yaml)$
+
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v26.8.0
+    hooks:
+      - id: ansible-lint
+        name: Ansible lint
+        args:
+          - --project-dir=ansible
+          - --profile=min
+          - ansible/playbook.yml
+        always_run: false
+        files: ^ansible/
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        name: ShellCheck Ansible scripts
+        files: ^ansible/roles/system-btrfs/files/.*\.sh$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.4
+    hooks:
+      - id: ruff-check
+        name: Ruff Snapper DNF helper
+        files: ^ansible/roles/system-btrfs/files/snapper-dnf-action-helper$
+        types_or: [file]
+

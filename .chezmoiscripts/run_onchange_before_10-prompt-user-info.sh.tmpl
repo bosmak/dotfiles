@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Prompt for user info and write ~/.config/chezmoi/chezmoi.toml.
+# Runs before apply. The hash below is tied to the config file's
+# existence/size, so deleting the config triggers a re-run on the
+# next `chezmoi apply`.
+# Config state hash: {{ output "bash" "-c" "if [ -f $HOME/.config/chezmoi/chezmoi.toml ]; then stat -c %s $HOME/.config/chezmoi/chezmoi.toml; else echo missing; fi" | trim }}
+
+set -euo pipefail
+
+CONFIG="$HOME/.config/chezmoi/chezmoi.toml"
+
+if [ -f "$CONFIG" ]; then
+    exit 0
+fi
+
+if [[ ! -r /dev/tty ]] 2>/dev/null; then
+    echo "WARN: no TTY; create $CONFIG manually"
+    exit 0
+fi
+
+mkdir -p "$(dirname "$CONFIG")"
+
+if command -v gum >/dev/null 2>&1; then
+    role=$(gum choose --header "What role is this machine?" personal work)
+    email=$(gum input --placeholder "Email")
+    name=$(gum input --placeholder "Name")
+else
+    echo
+    echo "==> What role is this machine?"
+    echo "  1) personal"
+    echo "  2) work"
+    role=""
+    while [ -z "$role" ]; do
+        read -r -p "Choice [1/2]: " choice < /dev/tty
+        case "$choice" in
+            1|personal) role="personal" ;;
+            2|work) role="work" ;;
+            *) echo "Please enter 1 or 2." ;;
+        esac
+    done
+    read -r -p "Email: " email < /dev/tty
+    read -r -p "Name: " name < /dev/tty
+fi
+
+hostname_val="$(hostname 2>/dev/null || echo 'localhost')"
+
+cat > "$CONFIG" <<EOF
+[edit]
+  command = "nvim"
+
+[git]
+  autoCommit = false
+  autoPush = false
+
+[data]
+  role        = "$role"
+  machineName = "$hostname_val"
+  email       = "$email"
+  name        = "$name"
+EOF
+
+echo "Wrote $CONFIG"
