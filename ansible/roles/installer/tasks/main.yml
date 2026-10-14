@@ -1,4 +1,14 @@
 ---
+- name: Run dnf tasks
+  ansible.builtin.import_tasks: dnf.yml
+  when:
+    - ansible_system == 'Linux'
+    - ansible_pkg_mgr in ['dnf', 'dnf5']
+
+- name: Run brew tasks
+  ansible.builtin.import_tasks: brew.yml
+  when: ansible_system == 'Darwin'
+
 - name: Run pre-install commands
   ansible.builtin.command: "{{ item.command }}"
   args:
@@ -7,16 +17,6 @@
   loop: "{{ pre_install_commands }}"
   when: pre_install_commands | length > 0
   become: "{{ item.become | default(false) }}"
-
-- name: Run dnf tasks
-  ansible.builtin.import_tasks: dnf.yml
-  when:
-    - ansible_system == 'Linux'
-    - ansible_pkg_mgr == 'dnf'
-
-- name: Run brew tasks
-  ansible.builtin.import_tasks: brew.yml
-  when: ansible_system == 'Darwin'
 
 - name: Add flatpak repos
   community.general.flatpak_remote:

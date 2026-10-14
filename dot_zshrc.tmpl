@@ -17,11 +17,11 @@ plug "zsh-users/zsh-syntax-highlighting"
 bindkey '^[[A' history-substring-search-up
 bindkey '^[[B' history-substring-search-down
 
-{{ if eq .chezmoi.os "linux" -}}
-# Theme
-[[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/dots/dank-palette.zsh" ]] \
-  && source "${XDG_CONFIG_HOME:-$HOME/.config}/dots/dank-palette.zsh"
-{{ end -}}
+# Snippets
+for file in "${XDG_CONFIG_HOME:-$HOME/.config}"/dots/*.zsh(N.); do
+  source "$file"
+done
+unset file
 
 # Load Starhip
 ZLE_RPROMPT_INDENT=0

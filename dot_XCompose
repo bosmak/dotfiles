@@ -1,0 +1,10 @@
+# Custom Compose overrides for Brazilian Portuguese on US Alt-Intl.
+# Keep the default compose table, but make apostrophe/dead-acute + c produce c-cedilla.
+include "%L"
+
+<dead_acute> <c> : "ç" ccedilla
+<dead_acute> <C> : "Ç" Ccedilla
+<Multi_key> <acute> <c> : "ç" ccedilla
+<Multi_key> <acute> <C> : "Ç" Ccedilla
+<Multi_key> <apostrophe> <c> : "ç" ccedilla
+<Multi_key> <apostrophe> <C> : "Ç" Ccedilla

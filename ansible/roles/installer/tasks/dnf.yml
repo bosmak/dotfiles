@@ -1,8 +1,9 @@
 ---
 - name: Install pre packages (dnf)
   ansible.builtin.dnf:
-    name: "{{ pre_packages }}"
+    name: "{{ item }}"
     state: present
+  loop: "{{ pre_packages }}"
   when: pre_packages | length > 0
   become: true
 
@@ -24,8 +25,9 @@
 
 - name: Install packages (dnf)
   ansible.builtin.dnf:
-    name: "{{ packages }}"
+    name: "{{ item }}"
     state: present
+  loop: "{{ packages }}"
   when: packages | length > 0
   become: true
 

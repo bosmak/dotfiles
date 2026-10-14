@@ -12,6 +12,18 @@
 - name: Install GitHub release binaries
   when: github_release_binaries | length > 0
   block:
+    - name: Stat installed binary
+      ansible.builtin.stat:
+        path: "{{ ansible_env.HOME }}/.local/bin/{{ item.link_name }}"
+        checksum_algorithm: sha256
+      register: __binary_stat
+      loop: "{{ github_release_binaries }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: __idx
+      when:
+        - item.assets[ansible_architecture] is defined
+
     - name: Download release asset
       ansible.builtin.get_url:
         url: "https://github.com/{{ item.repository }}/releases/download/{{ item.tag }}/{{ item.assets[ansible_architecture].filename }}"
@@ -19,16 +31,13 @@
         checksum: "sha256:{{ item.assets[ansible_architecture].sha256 }}"
         mode: '0644'
       loop: "{{ github_release_binaries }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: __idx
       when:
-        - github_release_binaries | length > 0
         - item.assets[ansible_architecture] is defined
-        - not (item.link_name | default('') | length > 0
-              and item.dest | default('') | length > 0
-              and (__check_binary.stat.exists | default(false)))
-      vars:
-        __check_binary:
-          ansible.builtin.stat:
-            path: "{{ ansible_env.HOME }}/.local/bin/{{ item.link_name | default('') }}"
+        - not (__binary_stat.results[__idx].stat.exists | default(false)
+               and (__binary_stat.results[__idx].stat.checksum | default('') == item.assets[ansible_architecture].sha256))
 
     - name: Create extract directory
       ansible.builtin.file:
@@ -36,9 +45,13 @@
         state: directory
         mode: '0755'
       loop: "{{ github_release_binaries }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: __idx
       when:
-        - github_release_binaries | length > 0
         - item.assets[ansible_architecture] is defined
+        - not (__binary_stat.results[__idx].stat.exists | default(false)
+               and (__binary_stat.results[__idx].stat.checksum | default('') == item.assets[ansible_architecture].sha256))
 
     - name: Extract release asset
       ansible.builtin.unarchive:
@@ -47,9 +60,13 @@
         remote_src: true
         creates: "/tmp/{{ item.name }}-{{ item.version }}/{{ item.binary_path }}"
       loop: "{{ github_release_binaries }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: __idx
       when:
-        - github_release_binaries | length > 0
         - item.assets[ansible_architecture] is defined
+        - not (__binary_stat.results[__idx].stat.exists | default(false)
+               and (__binary_stat.results[__idx].stat.checksum | default('') == item.assets[ansible_architecture].sha256))
 
     - name: Create install directory
       ansible.builtin.file:
@@ -65,11 +82,10 @@
         mode: '0755'
         remote_src: true
       loop: "{{ github_release_binaries }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: __idx
       when:
-        - github_release_binaries | length > 0
         - item.assets[ansible_architecture] is defined
-        - not (__final_binary.stat.exists | default(false))
-      vars:
-        __final_binary:
-          ansible.builtin.stat:
-            path: "{{ ansible_env.HOME }}/.local/bin/{{ item.link_name }}"
+        - not (__binary_stat.results[__idx].stat.exists | default(false)
+               and (__binary_stat.results[__idx].stat.checksum | default('') == item.assets[ansible_architecture].sha256))

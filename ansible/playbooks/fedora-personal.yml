@@ -7,6 +7,11 @@
   roles:
     - role: installer
       vars:
+        pre_packages:
+          - rpmfusion-free-release
+          - rpmfusion-nonfree-release
+          - python3-dnf-plugin-versionlock
+          - curl
         pre_install_commands:
           - command: "curl -fsSL https://yum.enpass.io/enpass-yum.repo -o /etc/yum.repos.d/enpass-yum.repo"
             creates: /etc/yum.repos.d/enpass-yum.repo
@@ -14,15 +19,9 @@
         extra_repos:
           - jdxcode/mise
           - atim/starship
-          - yalter/niri
-        pre_packages:
-          - rpmfusion-free-release
-          - rpmfusion-nonfree-release
-          - python3-dnf-plugin-versionlock
         packages:
           - firefox
           - vim
-          - fd
           - wget
           - power-profiles-daemon
           - cups-pk-helper
@@ -32,6 +31,7 @@
           - xdg-user-dirs
           - xdg-utils
           - flatpak
+          - flatseal
           - zsh
           - ripgrep
           - steam
@@ -44,8 +44,14 @@
           - ibus-panel
           - ibus-setup
           - ibus-wayland
+          - ibus-m17n
           - mise
           - starship
+          - wl-clipboard
+          - cups
+          - cups-filters
+          - cups-pk-helper
+          - xwayland-satellite-0.8.1-1.fc44
         flatpak_repos:
           - name: flathub
             url: https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -54,7 +60,7 @@
           - org.freecad.FreeCAD
         packages_replace:
           - old: ffmpeg-free
-            new: ffmpeg-full
+            new: ffmpeg
         locked_packages:
           - name: xwayland-satellite
             version: "0.8.1-1.fc44"
