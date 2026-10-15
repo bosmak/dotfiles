@@ -1,16 +1,4 @@
 ---
-- name: Install pre packages (brew)
-  community.general.homebrew:
-    name: "{{ pre_packages }}"
-    state: present
-  when: pre_packages | length > 0
-
-- name: Add extra repos (brew tap)
-  community.general.homebrew_tap:
-    name: "{{ item }}"
-  loop: "{{ extra_repos }}"
-  when: extra_repos | length > 0
-
 - name: Install packages (brew)
   community.general.homebrew:
     name: "{{ packages }}"

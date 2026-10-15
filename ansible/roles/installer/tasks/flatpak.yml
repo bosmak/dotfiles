@@ -1,0 +1,21 @@
+---
+- name: Add flatpak repos
+  community.general.flatpak_remote:
+    name: "{{ item.name }}"
+    flatpakrepo_url: "{{ item.url }}"
+    state: present
+  loop: "{{ flatpak_repos }}"
+  when:
+    - ansible_system == 'Linux'
+    - flatpak_repos | length > 0
+
+- name: Install flatpak apps
+  community.general.flatpak:
+    name: "{{ item }}"
+    remote: "{{ flatpak_repos[0].name | default('flathub') }}"
+    state: present
+    method: system
+  loop: "{{ flatpak }}"
+  when:
+    - ansible_system == 'Linux'
+    - flatpak | length > 0

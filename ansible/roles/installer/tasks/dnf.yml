@@ -1,27 +1,12 @@
 ---
-- name: Install pre packages (dnf)
+- name: Install packages from URL (dnf)
   ansible.builtin.dnf:
     name: "{{ item }}"
     state: present
-  loop: "{{ pre_packages }}"
-  when: pre_packages | length > 0
+    disable_gpg_check: true
+  loop: "{{ packages_url }}"
+  when: packages_url | length > 0
   become: true
-
-- name: Install packages from URL (dnf)
-  ansible.builtin.get_url:
-    url: "{{ item }}"
-    dest: "/tmp/{{ item | basename }}"
-    mode: '0644'
-  loop: "{{ package_urls }}"
-  when: package_urls | length > 0
-  become: true
-
-- name: Add extra repos (dnf/COPR)
-  ansible.builtin.command: dnf copr enable -y {{ item }}
-  loop: "{{ extra_repos }}"
-  when: extra_repos | length > 0
-  become: true
-  changed_when: false
 
 - name: Install packages (dnf)
   ansible.builtin.dnf:
@@ -39,15 +24,3 @@
   loop: "{{ packages_replace }}"
   when: packages_replace | length > 0
   become: true
-
-- name: Lock package versions
-  ansible.builtin.shell: |
-    if ! dnf -q versionlock --help >/dev/null 2>&1; then
-      echo "WARN: dnf versionlock plugin not installed; skipping lock for {{ item.name }}" >&2
-      exit 0
-    fi
-    dnf -q versionlock add {{ item.name }}-{{ item.version }}
-  loop: "{{ locked_packages }}"
-  when: locked_packages | length > 0
-  become: true
-  changed_when: false

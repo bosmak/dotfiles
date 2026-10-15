@@ -1,12 +1,12 @@
 ---
-- name: Run dnf tasks
-  ansible.builtin.import_tasks: dnf.yml
+- name: Run pre-dnf tasks
+  ansible.builtin.import_tasks: pre_dnf.yml
   when:
     - ansible_system == 'Linux'
     - ansible_pkg_mgr in ['dnf', 'dnf5']
 
-- name: Run brew tasks
-  ansible.builtin.import_tasks: brew.yml
+- name: Run pre-brew tasks
+  ansible.builtin.import_tasks: pre_brew.yml
   when: ansible_system == 'Darwin'
 
 - name: Run pre-install commands
@@ -18,26 +18,19 @@
   when: pre_install_commands | length > 0
   become: "{{ item.become | default(false) }}"
 
-- name: Add flatpak repos
-  community.general.flatpak_remote:
-    name: "{{ item.name }}"
-    flatpakrepo_url: "{{ item.url }}"
-    state: present
-  loop: "{{ flatpak_repos }}"
+- name: Run dnf tasks
+  ansible.builtin.import_tasks: dnf.yml
   when:
     - ansible_system == 'Linux'
-    - flatpak_repos | length > 0
+    - ansible_pkg_mgr in ['dnf', 'dnf5']
 
-- name: Install flatpak apps
-  community.general.flatpak:
-    name: "{{ item }}"
-    remote: "{{ flatpak_repos[0].name | default('flathub') }}"
-    state: present
-    method: system
-  loop: "{{ flatpak }}"
-  when:
-    - ansible_system == 'Linux'
-    - flatpak | length > 0
+- name: Run brew tasks
+  ansible.builtin.import_tasks: brew.yml
+  when: ansible_system == 'Darwin'
+
+- name: Run flatpak tasks
+  ansible.builtin.import_tasks: flatpak.yml
+  when: ansible_system == 'Linux'
 
 - name: Run GitHub tasks
   ansible.builtin.import_tasks: github.yml

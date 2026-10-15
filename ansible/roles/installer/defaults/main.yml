@@ -1,9 +1,10 @@
 ---
 pre_packages: []
-package_urls: []
-pre_install_commands: []
+pre_packages_url: []
 extra_repos: []
+pre_install_commands: []
 packages: []
+packages_url: []
 packages_replace: []
 locked_packages: []
 flatpak: []

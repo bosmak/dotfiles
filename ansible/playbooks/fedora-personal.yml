@@ -7,6 +7,10 @@
   roles:
     - role: installer
       vars:
+        extra_repos:
+          - jdxcode/mise
+          - atim/starship
+          - bosmak/copr
         pre_packages:
           - rpmfusion-free-release
           - rpmfusion-nonfree-release
@@ -16,9 +20,6 @@
           - command: "curl -fsSL https://yum.enpass.io/enpass-yum.repo -o /etc/yum.repos.d/enpass-yum.repo"
             creates: /etc/yum.repos.d/enpass-yum.repo
             become: true
-        extra_repos:
-          - jdxcode/mise
-          - atim/starship
         packages:
           - firefox
           - vim
@@ -52,6 +53,8 @@
           - cups-filters
           - cups-pk-helper
           - xwayland-satellite-0.8.1-1.fc44
+          - pvpn
+          - clip-bridge
         flatpak_repos:
           - name: flathub
             url: https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -71,17 +74,6 @@
             dest: "{{ ansible_env.HOME }}/.local/share/zap"
             depth: 1
             update: false
-        github_release_binaries:
-          - name: clip-bridge
-            repository: noctisynth/clip-bridge
-            version: "0.1.9"
-            tag: clip-bridge-v0.1.9
-            binary_path: clip-bridge
-            link_name: clip-bridge
-            assets:
-              x86_64:
-                filename: clip-bridge-0.1.9-x86_64.tar.gz
-                sha256: 26266f794be2b7fe1d9cf3d3a58b28939e0b0cd8484a2fd1fa375fe4b4e620d1
         keyboard:
           layout: us
           model: pc105

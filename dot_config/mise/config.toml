@@ -1,6 +1,7 @@
 [tools]
 chezmoi = "latest"
+gh      = "latest"
 codex   = "latest"
 glow    = "latest"
 pi      = "latest"
-usage = "latest"
+usage   = "latest"
