@@ -12,4 +12,5 @@ flatpak_repos: []
 github_repositories: []
 github_release_binaries: []
 keyboard: {}
+user_groups: []
 post_install_commands: []

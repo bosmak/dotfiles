@@ -39,6 +39,9 @@
   ansible.builtin.import_tasks: keyboard.yml
   when: ansible_system == 'Linux'
 
+- name: Add user to supplementary groups
+  ansible.builtin.import_tasks: groups.yml
+
 - name: Run post-install commands
   ansible.builtin.command: "{{ item.command }}"
   args:

@@ -1,0 +1,16 @@
+---
+- name: Ensure groups exist
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ user_groups }}"
+  when: user_groups | length > 0
+  become: true
+
+- name: Add user to supplementary groups
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    groups: "{{ user_groups | join(',') }}"
+    append: true
+  when: user_groups | length > 0
+  become: true

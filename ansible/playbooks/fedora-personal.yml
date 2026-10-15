@@ -80,6 +80,9 @@
           variant: alt-intl
           options: []
           ibus_engine: xkb:us:alt-intl:eng
+        user_groups:
+          - i2c
+          - pvpn
         post_install_commands:
           - command: mise trust
             chdir: "{{ ansible_env.HOME }}"

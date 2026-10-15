@@ -25,6 +25,7 @@ dnf                            brew
 flatpak                        (skipped)
 github                         github
 keyboard                       (skipped)
+groups                         groups
 post_install_commands          post_install_commands
 ```
 
@@ -58,6 +59,7 @@ tasks/
   flatpak.yml       Linux: flatpak repos + apps
   github.yml        clone repos + install release binaries
   keyboard.yml      xkb layout + ibus engine via dconf
+  groups.yml        add the running user to supplementary groups
 ```
 
 ## Variables
@@ -105,6 +107,11 @@ keyboard:
   ibus_engine: xkb:us:alt-intl:eng
 ```
 Writes xkb layout + ibus engine via `dconf`. Linux-only.
+
+### `user_groups`
+| Variable | Purpose |
+| --- | --- |
+| `user_groups` | Supplementary group names to add the running user to (e.g. `docker`, `libvirt`, `plugdev`). Uses `append: true` so existing membership is preserved. Groups that don't yet exist on the system are created first, so order vs. package install doesn't matter. Runs after `keyboard` and before `post_install_commands`. |
 
 ## Usage
 
