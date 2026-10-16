@@ -16,6 +16,8 @@ plug "zsh-users/zsh-syntax-highlighting"
 # Binds
 bindkey '^[[A' history-substring-search-up
 bindkey '^[[B' history-substring-search-down
+bindkey "^[[1;5C" forward-word
+bindkey "^[[1;5D" backward-word
 
 # Snippets
 for file in "${XDG_CONFIG_HOME:-$HOME/.config}"/dots/*.zsh(N.); do

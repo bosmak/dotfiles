@@ -22,7 +22,7 @@ What lands in this directory per machine is decided by `.chezmoiignore`
 
 | File | What it does |
 |---|---|
-| `dank-palette.zsh` | Wires DankMaterialShell's matugen palette into fzf-tab, zsh-syntax-highlighting, zsh-autosuggestions, history-substring-search, Starship, and the terminal background. |
+| `palette.zsh` | Picks the best palette source available — DankMaterialShell's `dms-colors.json` (matugen output) when present, otherwise the system accent color (macOS `AppleAccentColor`, GNOME `gsettings`, KDE `kdeglobals`) with a Python-derived Material You–style palette as fallback — and applies it to fzf-tab, zsh-syntax-highlighting, zsh-autosuggestions, history-substring-search, Starship, and the terminal background. |
 
 ## Adding a new module
 
