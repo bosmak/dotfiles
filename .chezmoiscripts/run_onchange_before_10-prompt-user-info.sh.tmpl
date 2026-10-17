@@ -24,6 +24,18 @@ if command -v gum >/dev/null 2>&1; then
     role=$(gum choose --header "What role is this machine?" personal work)
     email=$(gum input --placeholder "Email")
     name=$(gum input --placeholder "Name")
+    # Discover available ansible playbooks (basenames without .yml) and let
+    # the user pick one or "none". Defaults to "none" when the playbook
+    # tree is absent.
+    PLAYBOOK_DIR="{{ .chezmoi.sourceDir }}/ansible/playbooks"
+    if [[ -d "$PLAYBOOK_DIR" ]]; then
+        # mapfile null-delimited, strip .yml, prepend "none"
+        mapfile -t PLAYBOOKS < <(find "$PLAYBOOK_DIR" -maxdepth 1 -type f -name '*.yml' -printf '%f\0' | sort -z | xargs -0 -n1 basename -s .yml)
+        PLAYBOOKS=(none "${PLAYBOOKS[@]}")
+        playbook=$(gum choose --header "Which ansible playbook should run on apply? (none = skip ansible)" "${PLAYBOOKS[@]}")
+    else
+        playbook="none"
+    fi
 else
     echo
     echo "==> What role is this machine?"
@@ -40,6 +52,37 @@ else
     done
     read -r -p "Email: " email < /dev/tty
     read -r -p "Name: " name < /dev/tty
+
+    echo
+    echo "==> Which ansible playbook should run on apply?"
+    PLAYBOOK_DIR="{{ .chezmoi.sourceDir }}/ansible/playbooks"
+    playbook=""
+    if [[ -d "$PLAYBOOK_DIR" ]]; then
+        mapfile -t PLAYBOOKS < <(find "$PLAYBOOK_DIR" -maxdepth 1 -type f -name '*.yml' -printf '%f\0' | sort -z | xargs -0 -n1 basename -s .yml)
+        echo "  0) none (skip ansible)"
+        i=1
+        for pb in "${PLAYBOOKS[@]}"; do
+            echo "  $i) $pb"
+            i=$((i+1))
+        done
+        echo "    (press enter to keep current / auto-detect from role)"
+        while true; do
+            read -r -p "Choice [0-$((i-1))]: " choice < /dev/tty
+            case "$choice" in
+                "" ) playbook=""; break ;;
+                0|none) playbook="none"; break ;;
+                *)
+                    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice < i )); then
+                        playbook="${PLAYBOOKS[$((choice-1))]}"
+                        break
+                    fi
+                    echo "Please enter a number between 0 and $((i-1)), or press enter to skip." ;;
+            esac
+        done
+    else
+        echo "  (no ansible/playbooks/ found; defaulting to none)"
+        playbook="none"
+    fi
 fi
 
 hostname_val="$(hostname 2>/dev/null || echo 'localhost')"
@@ -58,5 +101,16 @@ cat > "$CONFIG" <<EOF
   email       = "$email"
   name        = "$name"
 EOF
+
+# If the user picked a playbook (or explicitly chose "none"), persist it.
+# An empty playbook means auto-detect from role+OS.
+if [[ -n "${playbook:-}" ]]; then
+    # Insert/replace the playbook line in-place.
+    if grep -q '^playbook *=' "$CONFIG"; then
+        sed -i "s|^playbook *=.*|playbook = \"$playbook\"|" "$CONFIG"
+    else
+        printf '\nplaybook = "%s"\n' "$playbook" >> "$CONFIG"
+    fi
+fi
 
 echo "Wrote $CONFIG"

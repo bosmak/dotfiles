@@ -20,9 +20,21 @@ if [[ ! -d "$ANSIBLE_DIR" ]]; then
     exit 0
 fi
 
-OS_ID="{{ .chezmoi.osRelease.id | default "linux" }}"
-ROLE="{{ .role | default "personal" }}"
-PLAYBOOK="$ANSIBLE_DIR/playbooks/${OS_ID}-${ROLE}.yml"
+# playbook: basename (without .yml) from ansible/playbooks/, or "none"
+# to skip ansible. Unset falls back to OS+role auto-detection.
+PLAYBOOK_NAME="{{ if hasKey . "playbook" }}{{ .playbook }}{{ end }}"
+PLAYBOOK=""
+
+if [[ -z "$PLAYBOOK_NAME" ]]; then
+    OS_ID="{{ .chezmoi.osRelease.id | default "linux" }}"
+    ROLE="{{ .role | default "personal" }}"
+    PLAYBOOK="$ANSIBLE_DIR/playbooks/${OS_ID}-${ROLE}.yml"
+elif [[ "$PLAYBOOK_NAME" == "none" ]]; then
+    echo "==> playbook=none in chezmoi.toml; skipping ansible"
+    exit 0
+else
+    PLAYBOOK="$ANSIBLE_DIR/playbooks/${PLAYBOOK_NAME}.yml"
+fi
 
 if [[ ! -f "$PLAYBOOK" ]]; then
     echo "Playbook not found: $PLAYBOOK (skipping)"
@@ -30,12 +42,10 @@ if [[ ! -f "$PLAYBOOK" ]]; then
 fi
 
 # --ask-become-pass prompts for the sudo password on a TTY.
-# In non-interactive contexts (cron, scripts), the user must have
-# NOPASSWD sudo configured.
 ANSIBLE_BECOME_FLAGS=""
 if [[ -r /dev/tty ]] 2>/dev/null; then
     ANSIBLE_BECOME_FLAGS="--ask-become-pass"
 fi
 
 echo "==> Running ansible: $PLAYBOOK"
-(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS "playbooks/${OS_ID}-${ROLE}.yml")
+(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS "${PLAYBOOK#$ANSIBLE_DIR/}")

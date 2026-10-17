@@ -1,5 +1,6 @@
 # Repo support files — not deployed to $HOME
 README.md
+AGENTS.md
 tools
 ansible
 mise.toml
