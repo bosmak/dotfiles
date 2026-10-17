@@ -10,7 +10,7 @@
   when: ansible_system == 'Darwin'
 
 - name: Run pre-install commands
-  ansible.builtin.command: "{{ item.command }}"
+  ansible.builtin.shell: "{{ item.command }}"
   args:
     chdir: "{{ item.chdir | default(omit) }}"
     creates: "{{ item.creates | default(omit) }}"
@@ -43,7 +43,7 @@
   ansible.builtin.import_tasks: groups.yml
 
 - name: Run post-install commands
-  ansible.builtin.command: "{{ item.command }}"
+  ansible.builtin.shell: "{{ item.command }}"
   args:
     chdir: "{{ item.chdir | default(omit) }}"
     creates: "{{ item.creates | default(omit) }}"

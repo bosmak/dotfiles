@@ -29,6 +29,8 @@
           - kf6-kimageformats
           - i2c-tools
           - adw-gtk3-theme
+          - qt6ct
+          - qt5ct
           - xdg-user-dirs
           - xdg-utils
           - flatpak
@@ -49,18 +51,34 @@
           - mise
           - starship
           - wl-clipboard
+          - xclip
           - cups
           - cups-filters
           - cups-pk-helper
           - xwayland-satellite-0.8.1-1.fc44
           - pvpn
           - clip-bridge
+          - liberation-fonts-all
+          - rsms-inter-vf-fonts
+          - fira-code-fonts
+          - levien-inconsolata-fonts
+          - google-noto-fonts-all
+          - xorg-x11-font-utils
+          - fontconfig
+          - enpass
         flatpak_repos:
           - name: flathub
             url: https://dl.flathub.org/repo/flathub.flatpakrepo
         flatpak:
           - com.discordapp.Discord
           - org.freecad.FreeCAD
+          - com.heroicgameslauncher.hgl
+          - org.freedesktop.Platform.VulkanLayer.gamescope//25.08
+          - com.vysp3r.ProtonPlus
+          - com.bitwarden.desktop
+          - org.gtk.Gtk3theme.adw-gtk3
+          - org.gtk.Gtk3theme.adw-gtk3-dark
+          - me.amankhanna.opendeck
         packages_replace:
           - old: ffmpeg-free
             new: ffmpeg
@@ -87,4 +105,11 @@
           - command: mise trust
             chdir: "{{ ansible_env.HOME }}"
           - command: mise install --yes
+            chdir: "{{ ansible_env.HOME }}"
+          - command: >
+              for id in calculator wallhavenCarousel niriWorkspaceBar caffeineRedesigned;
+              do dms plugins install "$id";
+              rc=$?;
+              [ $rc -eq 0 ] || [ $rc -eq 1 ] || echo "id=$id failed (rc=$rc)";
+              done
             chdir: "{{ ansible_env.HOME }}"

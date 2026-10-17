@@ -22,7 +22,20 @@ What lands in this directory per machine is decided by `.chezmoiignore`
 
 | File | What it does |
 |---|---|
-| `palette.zsh` | Picks the best palette source available — DankMaterialShell's `dms-colors.json` (matugen output) when present, otherwise the system accent color (macOS `AppleAccentColor`, GNOME `gsettings`, KDE `kdeglobals`) with a Python-derived Material You–style palette as fallback — and applies it to fzf-tab, zsh-syntax-highlighting, zsh-autosuggestions, history-substring-search, Starship, and the terminal background. |
+| `00-palette.zsh` | Picks the best palette source available — DankMaterialShell's `dms-colors.json` (matugen output) when present, otherwise the system accent color (macOS `AppleAccentColor`, GNOME `gsettings`, KDE `kdeglobals`) with a Python-derived Material You–style palette as fallback — and applies it to fzf-tab, zsh-syntax-highlighting, zsh-autosuggestions, history-substring-search, Starship, and the terminal background. |
+| `20-functions.zsh` | Sources every regular file in `functions/` (alphabetical). Drop new one-off snippets there without touching `~/.zshrc` or adding entries here. |
+
+## `functions/`
+
+A scratchpad for small, self-contained snippets — aliases, helpers,
+short scripts you want on the path-as-functions. Loaded by
+`20-functions.zsh`, alphabetical.
+
+- Files in here don't need number prefixes — order rarely matters for
+  independent helpers.
+- Put something that needs ordering earlier/later than its siblings?
+  Prefix the file with `10-`, `20-`, etc. and the loader will still
+  honor alphabetical order.
 
 ## Adding a new module
 
