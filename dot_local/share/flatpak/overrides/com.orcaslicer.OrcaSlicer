@@ -1,0 +1,5 @@
+[Context]
+sockets=!wayland;x11
+
+[Environment]
+GDK_BACKEND=x11

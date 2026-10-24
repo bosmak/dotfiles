@@ -66,6 +66,7 @@
           - xorg-x11-font-utils
           - fontconfig
           - enpass
+          - dux-files
         flatpak_repos:
           - name: flathub
             url: https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -79,6 +80,16 @@
           - org.gtk.Gtk3theme.adw-gtk3
           - org.gtk.Gtk3theme.adw-gtk3-dark
           - me.amankhanna.opendeck
+          - org.angryip.ipscan
+          - app.zen_browser.zen
+          - com.orcaslicer.OrcaSlicer
+          - app.ytmdesktop.ytmdesktop
+          - org.videolan.VLC
+          - com.ktechpit.whatsie
+          - org.gnome.Calculator
+          - dev.zed.Zed
+          - org.gnome.Firmware
+          - io.github.flattool.Ignition
         packages_replace:
           - old: ffmpeg-free
             new: ffmpeg

@@ -13,5 +13,6 @@ dot_config/autostart/**
 dot_config/DankMaterialShell/**
 dot_config/environment.d/**
 dot_local/share/flatpak/**
+dot_local/bin/**
 dot_XCompose
 {{ end }}
