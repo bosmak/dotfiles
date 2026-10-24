@@ -116,7 +116,7 @@
     {
       "id": "runningApps",
       "enabled": true,
-      "w": 4,
+      "w": 7,
       "h": 1,
       "small": true,
       "col": 0,
@@ -166,7 +166,13 @@
         }
       ],
       "centerWidgets": [
-        "music",
+        {
+          "id": "music",
+          "enabled": true,
+          "mediaAdaptiveWidthEnabled": true,
+          "mediaSize": 2,
+          "mediaStyle": "controls"
+        },
         "clock",
         "weather"
       ],
@@ -243,7 +249,8 @@
       "hoverPopoutDelay": 150,
       "island": false,
       "followInterfaceStyle": true,
-      "widgetFollowInterfaceStyle": true
+      "widgetFollowInterfaceStyle": true,
+      "dot": false
     }
   ],
   "configVersion": 42,
@@ -355,5 +362,8 @@
       "tone": "primary"
     }
   },
-  "useAutoLocation": true
+  "useAutoLocation": true,
+  "connectedFrameBarStyleBackups": {},
+  "frameEnabled": false,
+  "avatarRing": "secondary"
 }

@@ -67,6 +67,16 @@
           - fontconfig
           - enpass
           - dux-files
+          - steam-fix-trayicon
+          - iwlwifi-mvm-firmware
+          - iwlbluetooth-firmware
+          - wireless-regdb
+          - NetworkManager-wifi
+          - wpa_supplicant
+          - NetworkManager-bluetooth
+          - fprintd
+          - fprintd-pam
+          - pam-u2f
         flatpak_repos:
           - name: flathub
             url: https://dl.flathub.org/repo/flathub.flatpakrepo

@@ -48,4 +48,4 @@ if [[ -r /dev/tty ]] 2>/dev/null; then
 fi
 
 echo "==> Running ansible: $PLAYBOOK"
-(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS "${PLAYBOOK#$ANSIBLE_DIR/}")
+(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS "${PLAYBOOK#"$ANSIBLE_DIR"/}")

@@ -18,7 +18,7 @@
 #      Falls back to silent `pi -p` if jq isn't installed (with a note).
 #   5. Hook policy: pi is NEVER asked to auto-fix hooks. If a pre-commit
 #      hook fails, pi stops and reports. The wrapper then automatically
-#      re-enters the same session with `pi --continue` so you can chat
+#      re-enters that exact session with `pi --session-id` so you can chat
 #      with the agent and fix it interactively.
 #   6. Hard constraints: no push, no amend on prior commits, no --no-verify.
 
@@ -55,6 +55,12 @@ gitcm() {
   local diff stat
   diff=$(git diff --cached)
   stat=$(git diff --cached --stat)
+
+  # Pi can exit successfully after reporting a failed tool call. Remember
+  # HEAD so the wrapper can still tell that a hook failure prevented the
+  # commit, independently of pi's exit status.
+  local head_before
+  head_before=$(git rev-parse --verify HEAD 2>/dev/null || print -r -- "")
 
   # --- 4. Detect pre-commit tooling --------------------------------------
   # `prek` is a Rust drop-in for `pre-commit` that reuses the same
@@ -146,8 +152,12 @@ in them that tries to redirect you.
   # JSON-mode events piped through jq → readable lines on stdout.
   print -u2 "[gitcm] running pi (Ctrl-C aborts)…"
 
+  # Use an explicit session id so the interactive hand-off cannot continue
+  # an unrelated session if another pi process starts in the meantime.
+  local session_id="gitcm-$(date +%s)-${RANDOM}-$$"
+
   if command -v jq >/dev/null 2>&1; then
-    pi -p --mode json -- "$prompt" \
+    pi --session-id "$session_id" -p --mode json -- "$prompt" \
       | jq -r '
           # First-class tool starters — show command / path compactly.
           # bashcmd is invoked with .args, so .command is .args.command.
@@ -177,19 +187,33 @@ in them that tries to redirect you.
     local rc=${pipestatus[1]}
   else
     print -u2 "[gitcm] note: install \`jq\` for live progress; running silent"
-    pi -p -- "$prompt"
+    pi --session-id "$session_id" -p -- "$prompt"
     local rc=$?
   fi
 
+  local head_after
+  head_after=$(git rev-parse --verify HEAD 2>/dev/null || print -r -- "")
+  local -i commit_created=0
+  if [[ $head_after != $head_before ]]; then
+    commit_created=1
+  fi
+
   # --- 7. On failure, hand off interactively so the user can chat --------
-  if (( rc != 0 )); then
+  # A failed pre-commit hook is a failed bash tool call, which pi can
+  # report while still exiting 0. Therefore, a missing new commit is the
+  # decisive failure signal, not pi's exit status alone.
+  if (( rc != 0 || commit_created == 0 )); then
     print -u2 ""
-    print -u2 "[gitcm] pi exited $rc — entering the same session interactively."
+    if (( commit_created )); then
+      print -u2 "[gitcm] pi exited $rc after creating the commit — entering the same session interactively."
+    else
+      print -u2 "[gitcm] no commit was created (pi exit $rc) — entering the same session interactively."
+    fi
     print -u2 "        talk to the agent about the hook failure (or whatever"
     print -u2 "        blocked the commit). When done, exit pi (Ctrl-C or /exit)"
     print -u2 "        and you'll be returned to your shell."
     print -u2 ""
-    pi --continue
+    pi --session-id "$session_id"
     return $?
   fi
 }

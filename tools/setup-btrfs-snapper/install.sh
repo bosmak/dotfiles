@@ -49,7 +49,7 @@ sudo restorecon -RFv /.snapshots
 
 # Set permissions for current user
 REAL_USER=${SUDO_USER:-$USER}
-sudo snapper -c root set-config ALLOW_USERS=$REAL_USER SYNC_ACL=yes
+sudo snapper -c root set-config "ALLOW_USERS=$REAL_USER" SYNC_ACL=yes
 
 echo "[3/6] Updating locate database config..."
 

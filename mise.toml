@@ -1,3 +1,4 @@
 [tools]
 betterleaks = "latest"
 prek = "latest"
+shellcheck = "latest"

@@ -71,6 +71,9 @@ tools/                       one-off setup scripts (not auto-used)
   chezmoi-init.sh            full bootstrap (prereqs + clone + prompt + apply)
   setup-btrfs-snapper/       snapper + btrfsmaintenance helpers
   win-fonts-script/          install Windows fonts
+  pre-commit/                lint helpers used by .pre-commit-config.yaml
+    lint-scripts.sh          renders chezmoi templates, then runs
+                             shellcheck (bash) or `zsh -f -n` (zsh)
 ansible/                     system provisioning (OS-aware)
   playbooks/fedora-personal.yml
   roles/installer/           pure data-driven installer role
@@ -97,8 +100,9 @@ dot_config/                  XDG config
   mise/                      mise tool versions
   niri/                      niri compositor config
 dot_local/                   XDG_DATA_HOME — flatpak overrides
-mise.toml                    repo-local mise tool pins (betterleaks, prek)
-.pre-commit-config.yaml      hooks (chezmoi, ansible-lint, shellcheck, …)
+mise.toml                    repo-local mise tool pins (betterleaks, prek,
+                             shellcheck)
+.pre-commit-config.yaml      hooks (chezmoi, ansible-lint, shellcheck, zsh)
 ```
 
 The `installer` role is pure-data driven — add new knobs (packages,
@@ -170,10 +174,21 @@ fallback without a major version bump.
 Before committing changes, run what `.pre-commit-config.yaml` runs:
 
 ```bash
+mise install                    # repo tools: prek, betterleaks, shellcheck
 bash -n <file>                  # bash syntax (also done by shellcheck)
+zsh -f -n <file>                # zsh syntax (also done by the zsh hook)
 ansible-playbook --syntax-check ansible/playbooks/<pb>.yml
-pre-commit run --all-files      # full hook set: shellcheck, ansible-lint, …
+prek run -a                     # full hook set: shellcheck, zsh, ansible-lint, …
 ```
+
+The lint hooks live in `.pre-commit-config.yaml`:
+
+- `shellcheck` — every `.sh`/`.bash` file, including the `.sh.tmpl`
+  chezmoi templates, which are rendered with `chezmoi execute-template`
+  before being checked.
+- `zsh-syntax-check` — every `.zsh`/`.zshrc` file with `zsh -f -n`
+  (shellcheck does not understand zsh).
+- Both are implemented by `tools/pre-commit/lint-scripts.sh`.
 
 To preview what chezmoi would change without applying:
 
