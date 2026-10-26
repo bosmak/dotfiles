@@ -366,5 +366,8 @@
   "connectedFrameBarStyleBackups": {},
   "frameEnabled": false,
   "avatarRing": "secondary",
-  "desktopWidgetInstances": []
+  "desktopWidgetInstances": [],
+  "notificationShowTimeoutBar": true,
+  "notificationTimeoutCritical": 60000,
+  "notificationCompactMode": true
 }

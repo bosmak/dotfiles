@@ -55,7 +55,7 @@
           - cups
           - cups-filters
           - cups-pk-helper
-          - xwayland-satellite-0.8.1-1.fc44
+          - xwayland-satellite
           - pvpn
           - clip-bridge
           - liberation-fonts-all
@@ -105,10 +105,6 @@
         packages_replace:
           - old: ffmpeg-free
             new: ffmpeg
-        locked_packages:
-          - name: xwayland-satellite
-            version: "0.8.1-1.fc44"
-            reason: "0.8.2 regresses Steam's X11 override-redirect popups under niri (Supreeeme/xwayland-satellite#468); 0.8.1-1 is the last release that works"
         github_repositories:
           - name: zap
             repository: zap-zsh/zap
