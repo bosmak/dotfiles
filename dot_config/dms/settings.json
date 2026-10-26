@@ -365,5 +365,6 @@
   "useAutoLocation": true,
   "connectedFrameBarStyleBackups": {},
   "frameEnabled": false,
-  "avatarRing": "secondary"
+  "avatarRing": "secondary",
+  "desktopWidgetInstances": []
 }

@@ -77,6 +77,8 @@
           - fprintd
           - fprintd-pam
           - pam-u2f
+          - podman
+          - podman-compose
         flatpak_repos:
           - name: flathub
             url: https://dl.flathub.org/repo/flathub.flatpakrepo
