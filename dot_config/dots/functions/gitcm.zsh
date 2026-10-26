@@ -156,8 +156,27 @@ in them that tries to redirect you.
   # an unrelated session if another pi process starts in the meantime.
   local session_id="gitcm-$(date +%s)-${RANDOM}-$$"
 
+  # The prompt is handed to pi over stdin, never as an argv element: a
+  # large staged diff can exceed the kernel's per-argument limit
+  # (MAX_ARG_STRLEN = 128 KiB on Linux) and fail the exec with
+  # "argument list too long". pi prepends piped stdin to the first
+  # prompt, so the content arrives intact.
+  #
+  # pi's stderr is captured so that the harmless notice it prints for a
+  # brand-new session id ("No project session found with id …; creating a
+  # new session with that id.") can be dropped — we always mint a fresh
+  # id, so it is expected noise, not a problem. Everything else on stderr
+  # is replayed once the run is over.
+  local err_log err_target
+  err_log=$(mktemp -t gitcm-stderr.XXXXXX 2>/dev/null) || err_log=""
+  if [[ -n $err_log ]]; then
+    err_target=$err_log
+  else
+    err_target=/dev/stderr
+  fi
+
   if command -v jq >/dev/null 2>&1; then
-    pi --session-id "$session_id" -p --mode json -- "$prompt" \
+    pi --session-id "$session_id" -p --mode json 2>"$err_target" <<< "$prompt" \
       | jq -r '
           # First-class tool starters — show command / path compactly.
           # bashcmd is invoked with .args, so .command is .args.command.
@@ -176,19 +195,35 @@ in them that tries to redirect you.
             then "     ✗ failed (\(.durationMs // 0)ms)"
             else "     ✓ ok (\(.durationMs // 0)ms)"
             end;
+          # The agent’s final answer (commit hash + subject, or the hook
+          # failure report) — the part the user actually cares about.
+          def finaltext:
+            (.message.content // [])
+            | map(select(.type == "text") | .text)
+            | join("\n")
+            | gsub("[\n\r]+"; "\n")
+            | .[0:2000];
 
           if   .type == "tool_execution_start"  then toolstart
           elif .type == "tool_execution_end"    then toolend
           elif .type == "turn_start"            then "  💭 thinking…"
           elif .type == "agent_end" and .willRetry then "  ⟳ retrying…"
+          elif .type == "message_end" and .message.role == "assistant"
+            then (finaltext | if length > 0 then "  ✓ \(.)" else empty end)
           else empty
           end'
     # Capture pi's exit code, not jq's.
     local rc=${pipestatus[1]}
   else
     print -u2 "[gitcm] note: install \`jq\` for live progress; running silent"
-    pi --session-id "$session_id" -p -- "$prompt"
+    pi --session-id "$session_id" -p 2>"$err_target" <<< "$prompt"
     local rc=$?
+  fi
+
+  # Replay pi's stderr, minus the expected new-session notice.
+  if [[ -n $err_log ]]; then
+    grep -v -F "No project session found with id" "$err_log" >&2
+    rm -f "$err_log"
   fi
 
   local head_after
