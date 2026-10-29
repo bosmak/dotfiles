@@ -50,7 +50,7 @@
     {
       "id": "brightnessSlider",
       "enabled": true,
-      "deviceName": "leds:igc-0700-led2",
+      "deviceName": "ddc:i2c-9",
       "w": 4,
       "h": 1,
       "col": 4,
@@ -369,5 +369,32 @@
   "desktopWidgetInstances": [],
   "notificationShowTimeoutBar": true,
   "notificationTimeoutCritical": 60000,
-  "notificationCompactMode": true
+  "notificationCompactMode": true,
+  "mediaLyricsProviders": [
+    {
+      "id": "betterlyrics",
+      "enabled": true
+    },
+    {
+      "id": "unison",
+      "enabled": true
+    },
+    {
+      "id": "lyricsplus",
+      "enabled": true
+    },
+    {
+      "id": "kugou",
+      "enabled": true
+    },
+    {
+      "id": "lrclib",
+      "enabled": true
+    },
+    {
+      "id": "youtubemusic",
+      "enabled": true
+    }
+  ],
+  "osdAlwaysShowValue": false
 }
