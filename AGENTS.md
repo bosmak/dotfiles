@@ -87,7 +87,7 @@ ansible/                     system provisioning (OS-aware)
       brew.yml               macOS: main package install
       flatpak.yml            Linux: flatpak repos + apps
       github.yml             clone repos + install release binaries
-      keyboard.yml           xkb layout/options + ibus
+      keyboard.yml           xkb layout/options via dconf
       groups.yml             add the running user to supplementary groups
 dot_zshrc.tmpl               OS+role aware (sources work.zsh or personal.zsh)
 dot_gitconfig.tmpl           role-aware git identity
@@ -97,6 +97,8 @@ dot_config/                  XDG config
   DankMaterialShell/         Wayland shell config
   dots/                      dotfile snippets
   environment.d/             systemd user env overrides
+  fcitx5/                    fcitx5 profile (input method selection)
+  gtk-3.0/, gtk-4.0/         GTK settings (fcitx IM module for XWayland)
   mise/                      mise tool versions
   niri/                      niri compositor config
 dot_local/                   XDG_DATA_HOME — flatpak overrides
@@ -213,9 +215,17 @@ chezmoi apply --dry-run --verbose
   `roles/installer/defaults/main.yml`, not into task `vars:`.
 - **Hash comments**: keep the hash command body on one line; multi-line
   `bash -c` payloads break chezmoi's hash extraction.
+- **`.chezmoiignore`**: patterns are matched against the **target** path
+  relative to `$HOME` (e.g. `.config/niri/**`), *not* the source name
+  (`dot_config/niri/**` never matches). After every change that adds,
+  removes, or renames source files, re-check `.chezmoiignore`: new
+  source paths must either be deployed on purpose or added to it.
 
 ## Don't
 
+- Don't forget to update `.chezmoiignore` after a change — check it with
+  `chezmoi ignored` and `chezmoi managed` (target-path patterns) when in
+  doubt if something should be ignored, ask! Only ignore if you are 100% sure
 - Don't modify `~/.config/chezmoi/chezmoi.toml` directly — it's
   user-managed; change the prompt scripts instead.
 - Don't remove the legacy `playbook` fallback (unset → OS+role auto-detect)

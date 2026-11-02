@@ -40,14 +40,12 @@
           - steam
           - steam-devices
           - gamemode
-          - ibus
-          - ibus-gtk2
-          - ibus-gtk3
-          - ibus-gtk4
-          - ibus-panel
-          - ibus-setup
-          - ibus-wayland
-          - ibus-m17n
+          - fcitx5
+          - fcitx5-configtool
+          - fcitx5-gtk
+          - fcitx5-gtk3
+          - fcitx5-gtk4
+          - fcitx5-qt
           - mise
           - starship
           - wl-clipboard
@@ -79,6 +77,7 @@
           - pam-u2f
           - podman
           - podman-compose
+          - solidcraft
         flatpak_repos:
           - name: flathub
             url: https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -116,7 +115,6 @@
           model: pc105
           variant: alt-intl
           options: []
-          ibus_engine: xkb:us:alt-intl:eng
         user_groups:
           - i2c
           - pvpn

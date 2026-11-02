@@ -35,7 +35,7 @@
 - name: Run GitHub tasks
   ansible.builtin.import_tasks: github.yml
 
-- name: Run keyboard/ibus tasks
+- name: Run keyboard tasks
   ansible.builtin.import_tasks: keyboard.yml
   when: ansible_system == 'Linux'
 

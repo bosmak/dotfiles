@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=iBus
-Exec=ibus-daemon -drx
-Hidden=false
-Comment=IBus Daemon
-Terminal=false

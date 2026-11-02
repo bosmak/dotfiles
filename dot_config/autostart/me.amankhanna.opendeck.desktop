@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OpenDeck
+Comment=Use stream controllers
+Exec=/home/bsmk/.config/autostart/me.amankhanna.opendeck.ignition_delay.sh
+Icon=me.amankhanna.opendeck
+Terminal=false
+Categories=Office;
+X-Flatpak-RenamedFrom=opendeck.desktop;
+X-Flatpak=me.amankhanna.opendeck
+Hidden=false

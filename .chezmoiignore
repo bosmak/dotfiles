@@ -8,11 +8,11 @@ mise.toml
 
 # Linux only
 {{ if ne .chezmoi.os "linux" }}
-dot_config/niri/**
-dot_config/autostart/**
-dot_config/DankMaterialShell/**
-dot_config/environment.d/**
-dot_local/share/flatpak/**
-dot_local/bin/**
-dot_XCompose
+.config/niri/**
+.config/autostart/**
+.config/DankMaterialShell/**
+.config/environment.d/**
+.local/share/flatpak/**
+.local/bin/**
+.XCompose
 {{ end }}

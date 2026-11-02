@@ -1,0 +1,15 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Enpass
+Name[en_IN]=Enpass
+GenericName=Enpass Password Manager
+Icon=enpass
+Icon[en_IN]=enpass
+Terminal=false
+Exec=/home/bsmk/.config/autostart/enpass.ignition_delay.sh
+MimeType=x-scheme-handler/enpassauth;x-scheme-handler/enpasscard;x-scheme-handler/enpassstart;x-scheme-handler/enpass;x-scheme-handler/cloudkit-7adb8cc6tf.in.sinew.walletx;x-scheme-handler/enpassshare;application/enpasscard;
+Categories=Utility
+StartupWMClass=Enpass
+Hidden=false
+Comment=No comment set.

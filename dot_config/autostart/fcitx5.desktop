@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Fcitx5
+Exec=fcitx5 -d --replace
+Hidden=false
+Comment=Fcitx5 Input Method
+Terminal=false

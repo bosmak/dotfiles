@@ -2,14 +2,9 @@ repos:
   - repo: https://github.com/bosmak/chezmoi-hooks
     rev: v0.1.0
     hooks:
-      - id: chezmoi-preserve-templates
-        exclude: ^\.chezmoiscripts/
       - id: chezmoi-enforce-portability
+        exclude: ^ansible/.*\.(yml|yaml)$
         args:
-          # Optional data keys and documentation placeholders: they are not
-          # guaranteed to exist in ~/.config/chezmoi/chezmoi.toml, so chezmoi
-          # cannot render them ("map has no entry for key ..."). Skipping them
-          # keeps the hook usable without weakening it for real expressions.
           - --ignore-expression=.playbook
           - --ignore-expression=.var
 
@@ -22,9 +17,6 @@ repos:
     hooks:
       - id: ansible-syntax-check
         name: Ansible syntax check
-        # Run from ansible/ so ansible.cfg is picked up (roles_path=roles,
-        # inventory=inventory.yml). Running from ansible/playbooks/ broke
-        # role resolution.
         entry: bash -c 'cd ansible && ansible-playbook playbooks/*.yml --syntax-check'
         language: system
         pass_filenames: false
@@ -44,11 +36,6 @@ repos:
 
   - repo: local
     hooks:
-      # Shellcheck does not understand zsh, so zsh files are checked with
-      # `zsh -f -n` (parse only). chezmoi templates are rendered with
-      # `chezmoi execute-template` first, so a template is checked as the
-      # shell code it actually produces. shellcheck comes from mise
-      # (see mise.toml) or from the system package.
       - id: shellcheck
         name: ShellCheck shell scripts
         entry: bash tools/pre-commit/lint-scripts.sh bash

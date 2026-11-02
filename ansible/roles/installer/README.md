@@ -58,7 +58,7 @@ tasks/
   brew.yml          macOS: main package install
   flatpak.yml       Linux: flatpak repos + apps
   github.yml        clone repos + install release binaries
-  keyboard.yml      xkb layout + ibus engine via dconf
+  keyboard.yml      xkb layout + options via dconf
   groups.yml        add the running user to supplementary groups
 ```
 
@@ -104,9 +104,8 @@ keyboard:
   model: pc105
   variant: alt-intl
   options: []
-  ibus_engine: xkb:us:alt-intl:eng
 ```
-Writes xkb layout + ibus engine via `dconf`. Linux-only.
+Writes the xkb layout + options via `dconf`. Linux-only.
 
 ### `user_groups`
 | Variable | Purpose |

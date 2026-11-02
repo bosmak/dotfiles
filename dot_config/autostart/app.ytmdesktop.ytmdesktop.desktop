@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=YTMDesktop
+Comment=Free cross platform Desktop Player for YouTube Music
+Icon=app.ytmdesktop.ytmdesktop
+Type=Application
+Terminal=false
+Categories=AudioVideo;Utility
+Exec=/home/bsmk/.config/autostart/app.ytmdesktop.ytmdesktop.ignition_delay.sh
+StartupWMClass=YouTube Music Desktop App
+X-Flatpak=app.ytmdesktop.ytmdesktop
+Hidden=false
