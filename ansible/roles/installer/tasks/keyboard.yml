@@ -1,5 +1,5 @@
 ---
-- name: Set GNOME input sources to the plain xkb layout
+- name: Set keyboard layout
   ansible.builtin.shell: |
     current=$(dconf read /org/gnome/desktop/input-sources/sources 2>/dev/null || echo "")
     new="[('xkb', '{{ keyboard.layout }}{% if keyboard.variant | default('') != '' %}+{{ keyboard.variant }}{% endif %}')]"

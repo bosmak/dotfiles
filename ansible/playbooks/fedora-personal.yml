@@ -33,6 +33,10 @@
           - qt5ct
           - xdg-user-dirs
           - xdg-utils
+          - xdg-desktop-portal
+          - xdg-desktop-portal-gnome
+          - xdg-desktop-portal-gtk
+          - xdg-desktop-portal-wlr
           - flatpak
           - flatseal
           - zsh
@@ -55,6 +59,7 @@
           - cups-pk-helper
           - xwayland-satellite
           - pvpn
+          - plocate
           - clip-bridge
           - liberation-fonts-all
           - rsms-inter-vf-fonts
@@ -78,6 +83,11 @@
           - podman
           - podman-compose
           - solidcraft
+          - pciutils
+          - usbutils
+          - gnome-keyring
+          - gnome-keyring-pam
+          - seahorse
         flatpak_repos:
           - name: flathub
             url: https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -96,7 +106,7 @@
           - com.orcaslicer.OrcaSlicer
           - app.ytmdesktop.ytmdesktop
           - org.videolan.VLC
-          - com.ktechpit.whatsie
+          - io.github.tobagin.karere
           - org.gnome.Calculator
           - dev.zed.Zed
           - org.gnome.Firmware
@@ -118,6 +128,14 @@
         user_groups:
           - i2c
           - pvpn
+        post_install_vars:
+          dms_hidden_apps:
+          - fcitx5-configtool
+          - qt5ct
+          - qt6ct
+          dms_app_overrides:
+            enpass:
+              envVars: XDG_CURRENT_DESKTOP=GNOME
         post_install_commands:
           - command: mise trust
             chdir: "{{ ansible_env.HOME }}"
@@ -129,4 +147,24 @@
               rc=$?;
               [ $rc -eq 0 ] || [ $rc -eq 1 ] || echo "id=$id failed (rc=$rc)";
               done
+            chdir: "{{ ansible_env.HOME }}"
+          - command: |
+              #!/usr/bin/env bash
+              set -eu
+              dir="$HOME/.local/state/dms"
+              session="$dir/session.json"
+              mkdir -p "$dir" 2>/dev/null || exit 0
+              [ -w "$dir" ] || exit 0
+              [ -s "$session" ] || echo '{}' > "$session"
+              hidden='{{ post_install_vars.dms_hidden_apps | default([]) | to_json }}'
+              overrides='{{ post_install_vars.dms_app_overrides | default({}) | to_json }}'
+              filter='(if ($hidden | length) > 0 then .hiddenApps = $hidden else . end) | (if ($overrides | length) > 0 then .appOverrides = ((.appOverrides // {}) * $overrides) else . end)'
+              current=$(jq -c . "$session")
+              merged=$(jq -c --argjson hidden "$hidden" --argjson overrides "$overrides" "$filter" "$session")
+              if [ "$merged" != "$current" ]; then
+                tmp="$session.ansible.$$"
+                jq --argjson hidden "$hidden" --argjson overrides "$overrides" "$filter" "$session" > "$tmp"
+                mv "$tmp" "$session"
+                systemctl --user restart dms
+              fi
             chdir: "{{ ansible_env.HOME }}"

@@ -1,4 +1,4 @@
-# `scripts/`
+# `tools/`
 
 One-off setup scripts. Not run automatically by `install.sh` or the
 ansible playbook — kept here so they're available when needed (e.g.,

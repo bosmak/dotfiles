@@ -14,7 +14,7 @@ MimeType=x-scheme-handler/whatsapp;
 X-GNOME-UsesNotifications=true
 Actions=NewChat;Settings;
 X-Flatpak=com.ktechpit.whatsie
-Hidden=false
+Hidden=true
 
 [Desktop Action NewChat]
 Name=New chat
