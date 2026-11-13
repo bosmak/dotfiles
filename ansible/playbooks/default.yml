@@ -1,26 +1,30 @@
 ---
-- name: Fedora personal setup
+- name: Default workstation setup
   hosts: localhost
   connection: local
   gather_facts: true
 
   vars:
-    system: fedora
-    profile: personal
-    machine_id: "{{ machine_name | default(ansible_hostname, true) }}"
+    layer_system: "{{ system_id | default(ansible_distribution | lower, true) }}"
+    layer_profile: "{{ profile | default('personal', true) }}"
+    machine_id: "{{ ansible_hostname }}"
 
     layers:
       - name: system
         dir: system
-        file: "{{ system }}"
+        file: "{{ layer_system }}"
       - name: profile
         dir: profile
-        file: "{{ system }}-{{ profile }}"
+        file: "{{ layer_system }}-{{ layer_profile }}"
       - name: machine
         dir: machines
         file: "{{ machine_id }}"
 
   pre_tasks:
+    - name: Show the layers being applied
+      ansible.builtin.debug:
+        msg: "system={{ layer_system }} profile={{ layer_profile }} machine={{ machine_id }}"
+
     - name: Apply the system, profile and machine layers
       ansible.builtin.include_tasks: tasks/apply-layer.yml
       loop: "{{ layers }}"

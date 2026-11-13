@@ -64,6 +64,7 @@ add:
     - seahorse
     - steam
     - steam-devices
+    - ydotool
     - gamemode
     - steam-fix-trayicon
     - enpass

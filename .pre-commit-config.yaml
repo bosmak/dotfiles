@@ -9,6 +9,8 @@ repos:
           - --ignore-expression=.playbook
           - --ignore-expression=.var
           - --ignore-expression=.role
+          # The docs show the editor as a literal example value.
+          - --ignore-expression=.chezmoi.config.edit.command
 
   - repo: https://github.com/betterleaks/betterleaks
     rev: v1.7.1

@@ -9,6 +9,7 @@
 set -euo pipefail
 
 ANSIBLE_DIR="{{ .chezmoi.sourceDir }}/ansible"
+DEFAULT_PLAYBOOK="default"
 
 if ! command -v ansible-playbook >/dev/null 2>&1; then
     echo "ansible-playbook not found; skipping (run tools/chezmoi-init.sh to install prereqs)"
@@ -20,24 +21,42 @@ if [[ ! -d "$ANSIBLE_DIR" ]]; then
     exit 0
 fi
 
-# playbook: basename (without .yml) from ansible/playbooks/, or "none"
-# to skip ansible. Unset falls back to OS+role auto-detection.
+# Layer identity. The system layer follows the os-release ID (the same name
+# the layer files use) and the profile layer follows the role, so the playbook
+# carries neither in its name. An empty system id lets the playbook fall back
+# to the ansible distribution fact.
+SYSTEM_ID="{{ if hasKey .chezmoi "osRelease" }}{{ .chezmoi.osRelease.id }}{{ end }}"
+PROFILE="{{ if hasKey . "role" }}{{ .role }}{{ else }}personal{{ end }}"
+
+# Playbook selection: the "playbook" key holds a basename (without .yml) from
+# ansible/playbooks/, or "none" to skip ansible. An unset key falls back to
+# the legacy <os>-<role> name and then to the default playbook. A configured
+# name that no longer exists falls back to the default playbook instead of
+# skipping ansible.
 PLAYBOOK_NAME="{{ if hasKey . "playbook" }}{{ .playbook }}{{ end }}"
 PLAYBOOK=""
 
 if [[ -z "$PLAYBOOK_NAME" ]]; then
-    OS_ID="{{ .chezmoi.osRelease.id | default "linux" }}"
-    ROLE="{{ .role | default "personal" }}"
-    PLAYBOOK="$ANSIBLE_DIR/playbooks/${OS_ID}-${ROLE}.yml"
+    for candidate in "${SYSTEM_ID}-${PROFILE}" "$DEFAULT_PLAYBOOK"; do
+        if [[ -f "$ANSIBLE_DIR/playbooks/${candidate}.yml" ]]; then
+            PLAYBOOK="$ANSIBLE_DIR/playbooks/${candidate}.yml"
+            break
+        fi
+    done
 elif [[ "$PLAYBOOK_NAME" == "none" ]]; then
     echo "==> playbook=none in chezmoi.toml; skipping ansible"
     exit 0
-else
+elif [[ -f "$ANSIBLE_DIR/playbooks/${PLAYBOOK_NAME}.yml" ]]; then
     PLAYBOOK="$ANSIBLE_DIR/playbooks/${PLAYBOOK_NAME}.yml"
+else
+    echo "==> Playbook '$PLAYBOOK_NAME' not found; falling back to '$DEFAULT_PLAYBOOK'"
+    if [[ -f "$ANSIBLE_DIR/playbooks/${DEFAULT_PLAYBOOK}.yml" ]]; then
+        PLAYBOOK="$ANSIBLE_DIR/playbooks/${DEFAULT_PLAYBOOK}.yml"
+    fi
 fi
 
-if [[ ! -f "$PLAYBOOK" ]]; then
-    echo "Playbook not found: $PLAYBOOK (skipping)"
+if [[ -z "$PLAYBOOK" ]]; then
+    echo "Playbook not found: no playbook available (skipping)"
     exit 0
 fi
 
@@ -47,9 +66,15 @@ if [[ -r /dev/tty ]] 2>/dev/null; then
     ANSIBLE_BECOME_FLAGS="--ask-become-pass"
 fi
 
-# Machine identity, used by the playbooks to pick the per-machine
-# overlay (ansible/playbooks/vars/machines/<machine_name>.yml).
-MACHINE_NAME="{{ .chezmoi.hostname }}"
+# Machine identity is not passed in: the playbook reads the ansible_hostname
+# fact, so the machine layer follows the host it runs on.
 
-echo "==> Running ansible: $PLAYBOOK (machine: $MACHINE_NAME)"
-(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS -e "machine_name=$MACHINE_NAME" "${PLAYBOOK#"$ANSIBLE_DIR"/}")
+ANSIBLE_EXTRA_VARS=(-e "profile=$PROFILE")
+if [[ -n "$SYSTEM_ID" ]]; then
+    ANSIBLE_EXTRA_VARS+=(-e "system_id=$SYSTEM_ID")
+fi
+
+echo "==> Running ansible: $PLAYBOOK (system: ${SYSTEM_ID:-auto}, profile: $PROFILE)"
+(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS \
+    "${ANSIBLE_EXTRA_VARS[@]}" \
+    "${PLAYBOOK#"$ANSIBLE_DIR"/}")

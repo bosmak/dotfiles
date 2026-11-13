@@ -28,7 +28,7 @@ Full schema:
 
 ```toml
 [edit]
-  command = "nvim"
+  command = "vim"
 
 [git]
   autoCommit = false
@@ -36,10 +36,9 @@ Full schema:
 
 [data]
   role        = "personal"             # personal | work
-  machineName = "your-hostname"        # hostname at bootstrap
   email       = "you@example.com"
   name        = "Your Name"
-  playbook    = "fedora-personal"      # playbook basename | "none" | unset
+  playbook    = "default"              # playbook basename | "none" | unset
 ```
 
 Template variables available to `*.tmpl` files:
@@ -47,11 +46,18 @@ Template variables available to `*.tmpl` files:
 | Key            | Source                                         |
 | -------------- | ---------------------------------------------- |
 | `role`         | Prompt: `personal` \| `work`                   |
-| `machineName`  | `hostname`                                     |
 | `email`        | Prompt                                         |
 | `name`         | Prompt                                         |
 | `playbook`     | Prompt: playbook basename \| `none` \| unset   |
 | `.chezmoi.*`   | Built-in (e.g. `.chezmoi.osRelease.id`)        |
+
+`machineName` is gone: the machine layer is picked at run time from the
+`ansible_hostname` fact. The system layer follows the os-release ID, so
+there is no key for it either.
+
+The editor is asked at bootstrap and stored in `[edit].command`.
+`dot_gitconfig.tmpl` reuses it for `core.editor`, so the two can never
+drift apart.
 
 When you add a new template variable, update **both** prompt scripts
 and `tools/chezmoi-init.sh`.
@@ -76,7 +82,8 @@ tools/                       one-off setup scripts (not auto-used)
                              shellcheck (bash) or `zsh -f -n` (zsh)
 ansible/                     system provisioning (OS-aware)
   playbooks/
-    fedora-personal.yml     binds system + profile, then the machine
+    default.yml               generic play: binds system + profile + machine
+                             at run time
     tasks/
       apply-layer.yml       loads and merges one variable layer
     vars/                    variable layers (see below)
@@ -163,9 +170,8 @@ override:
   keyboard: {layout: us, model: pc105, variant: alt-intl, options: []}
 ```
 
-The machine is identified by `-e machine_name=<hostname>` (passed by
-`.chezmoiscripts/run_onchange_after_50-ansible.sh.tmpl` from
-`.chezmoi.hostname`), falling back to the `ansible_hostname` fact.
+The machine is identified by the `ansible_hostname` fact, so the
+machine layer file is named after the host the play runs on.
 
 Precedence notes (verified on ansible-core 2.20):
 
@@ -194,9 +200,9 @@ Precedence notes (verified on ansible-core 2.20):
 | A new `[data]` template variable| Update the schema block above, the table below, **both** prompt scripts (`.chezmoiscripts/run_onchange_before_10-…` and `tools/chezmoi-init.sh`) |
 | A new package on Fedora         | `ansible/playbooks/vars/system/fedora.yml` (`add.packages`) or `vars/profile/fedora-personal.yml` for personal apps |
 | A setting for one machine only  | `ansible/playbooks/vars/machines/<hostname>.yml` (`add`/`remove`/`merge`/`override`) |
-| A new persona (work, vm, …)     | `ansible/playbooks/vars/profile/<system>-<profile>.yml` + a playbook binding it |
+| A new persona (work, vm, …)     | `ansible/playbooks/vars/profile/<system>-<profile>.yml` |
 | Installer role defaults/flags   | `ansible/roles/installer/defaults/main.yml`                    |
-| A new OS×role provisioning path| `ansible/playbooks/<os>-<role>.yml` (auto-discovers in prompt) |
+| A new provisioning path         | `ansible/playbooks/<name>.yml` (auto-discovers in prompt) |
 | A new apply-time script         | `.chezmoiscripts/run_<when>_<NN>-<name>.sh.tmpl` (see [chezmoi run_onchange docs](https://www.chezmoi.io/docs/usage-guides/manage-machine-dotfiles/)) |
 | A repo-only file (don't deploy) | Add it to `.chezmoiignore` (see [chezmoiignore reference](https://www.chezmoi.io/docs/reference/chezmoiignore/)) |
 
@@ -233,12 +239,17 @@ runs at apply time:
 
 - `"none"` → skip ansible
 - `"<basename>"` → run `ansible/playbooks/<basename>.yml`
-- unset / empty → legacy fallback: `playbooks/<os>-<role>.yml`
+- unset / empty → legacy fallback: `playbooks/<os>-<role>.yml`, then
+  `playbooks/default.yml`
 
-If the resolved playbook file doesn't exist (e.g. `playbooks/<basename>.yml`
-isn't checked in), the script logs `Playbook not found: …` and exits 0
-without failing the apply. This is intentional: missing playbooks must
-not break `chezmoi apply`.
+A basename that no longer exists falls back to `default.yml` instead of
+skipping ansible; only when no playbook is available at all does the
+script log `Playbook not found: …` and exit 0 without failing the apply.
+This is intentional: missing playbooks must not break `chezmoi apply`.
+
+Playbook names carry no system or profile. The play binds them at run
+time: the system layer follows the os-release ID and the profile layer
+follows `[data].role`.
 
 Backward compatibility is intentional: do not remove the legacy
 fallback without a major version bump.

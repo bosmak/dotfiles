@@ -123,33 +123,39 @@ fi
 if [ ! -f "$CONFIG" ]; then
     if [[ ! -r /dev/tty ]] 2>/dev/null; then
         echo "ERROR: no TTY; cannot prompt. Create $CONFIG manually with:" >&2
+        echo '  [edit]' >&2
+        echo '  command = "vim"' >&2
         echo '  [data]' >&2
         echo '  role = "personal"' >&2
-        echo '  machineName = "your-hostname"' >&2
         echo '  email = "you@example.com"' >&2
         echo '  name = "Your Name"' >&2
-        echo '  playbook = "none"   # or a basename from ansible/playbooks/' >&2
+        echo '  playbook = "default"   # or "none", or a basename from ansible/playbooks/' >&2
         exit 1
     fi
     echo
     echo "==> User config"
     mkdir -p "$(dirname "$CONFIG")"
     if command -v gum >/dev/null 2>&1; then
+        editor=$(gum input --placeholder "Editor command" --value "vim")
         role=$(gum choose --header "What role is this machine?" personal work)
         email=$(gum input --placeholder "Email")
         name=$(gum input --placeholder "Name")
         # Discover available ansible playbooks (basenames without .yml) and let
-        # the user pick one or "none". Defaults to "none" when the playbook
-        # tree is absent.
+        # the user pick one or "none". The playbook name carries no system or
+        # profile: those are resolved at run time from the OS and the role.
         PLAYBOOK_DIR="$SOURCE_DIR/ansible/playbooks"
         if [[ -d "$PLAYBOOK_DIR" ]]; then
             mapfile -t PLAYBOOKS < <(find "$PLAYBOOK_DIR" -maxdepth 1 -type f -name '*.yml' -printf '%f\0' | sort -z | xargs -0 -n1 basename -s .yml)
-            PLAYBOOKS=(none "${PLAYBOOKS[@]}")
+            PLAYBOOKS+=("none")
             playbook=$(gum choose --header "Which ansible playbook should run on apply? (none = skip ansible)" "${PLAYBOOKS[@]}")
         else
             playbook="none"
         fi
     else
+        echo "Which editor should chezmoi and git use?"
+        read -r -p "Editor command [vim]: " editor < /dev/tty
+        editor="${editor:-vim}"
+        echo
         echo "What role is this machine?"
         echo "  1) personal"
         echo "  2) work"
@@ -171,24 +177,29 @@ if [ ! -f "$CONFIG" ]; then
         playbook=""
         if [[ -d "$PLAYBOOK_DIR" ]]; then
             mapfile -t PLAYBOOKS < <(find "$PLAYBOOK_DIR" -maxdepth 1 -type f -name '*.yml' -printf '%f\0' | sort -z | xargs -0 -n1 basename -s .yml)
-            echo "  0) none (skip ansible)"
             i=1
             for pb in "${PLAYBOOKS[@]}"; do
                 echo "  $i) $pb"
                 i=$((i+1))
             done
-            echo "    (press enter to keep current / auto-detect from role)"
+            none_index=$i
+            echo "  $none_index) none (skip ansible)"
+            echo "    (press enter to keep current / auto-detect)"
             while true; do
-                read -r -p "Choice [0-$((i-1))]: " choice < /dev/tty
+                read -r -p "Choice [0-$none_index]: " choice < /dev/tty
                 case "$choice" in
                     "" ) playbook=""; break ;;
                     0|none) playbook="none"; break ;;
                     *)
-                        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice < i )); then
-                            playbook="${PLAYBOOKS[$((choice-1))]}"
+                        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= none_index )); then
+                            if (( choice == none_index )); then
+                                playbook="none"
+                            else
+                                playbook="${PLAYBOOKS[$((choice-1))]}"
+                            fi
                             break
                         fi
-                        echo "Please enter a number between 0 and $((i-1)), or press enter to skip." ;;
+                        echo "Please enter a number between 0 and $none_index, or press enter to skip." ;;
                 esac
             done
         else
@@ -196,10 +207,9 @@ if [ ! -f "$CONFIG" ]; then
             playbook="none"
         fi
     fi
-    hostname_val="$(hostname 2>/dev/null || echo 'localhost')"
     cat > "$CONFIG" <<EOF
 [edit]
-  command = "nvim"
+  command = "$editor"
 
 [git]
   autoCommit = false
@@ -207,7 +217,6 @@ if [ ! -f "$CONFIG" ]; then
 
 [data]
   role        = "$role"
-  machineName = "$hostname_val"
   email       = "$email"
   name        = "$name"
 EOF

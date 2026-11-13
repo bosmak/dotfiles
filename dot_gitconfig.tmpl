@@ -6,7 +6,7 @@
 	name  = {{ .name | quote }}
 
 [core]
-	editor = vim
+	editor = {{ .chezmoi.config.edit.command | default "vim" | quote }}
 	pager = less -R
 
 [pull]

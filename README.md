@@ -21,6 +21,7 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply "$GITHUB_USERNAME"
 ```
 
 On first run the user info script will prompt for:
+- Editor command (default: `vim`) — used by `chezmoi edit` and by git
 - Role (personal / work)
 - Email
 - Name
@@ -44,8 +45,9 @@ all — see the next section.
 
 ## Variable layers: system → profile → machine
 
-The playbook binds a system and a profile, and the machine is detected
-from the hostname:
+The playbook binds the three layers at run time: the system comes from
+the os-release ID, the profile from your role, and the machine from
+the hostname:
 
 ```
 ansible/playbooks/vars/system/fedora.yml            OS baseline
@@ -67,9 +69,8 @@ override:
   keyboard: {layout: br}            # replaces the value
 ```
 
-The machine is matched by hostname — the apply script passes
-`-e machine_name=<hostname>` to ansible, and the playbook falls back to
-the `ansible_hostname` fact. Create one layer file per machine that
+The machine is matched by hostname — the playbook reads the
+`ansible_hostname` fact. Create one layer file per machine that
 needs it; the others just get the system + profile layers.
 
 
@@ -82,13 +83,17 @@ runs at apply time:
 | -------------- | -------------------------------------------------- |
 | `"none"`       | Skip ansible entirely.                             |
 | `"<basename>"` | Run `ansible/playbooks/<basename>.yml`.            |
-| (unset)        | Legacy: derive from `<os>-<role>` (old behaviour). |
+| (unset)        | Legacy: derive from `<os>-<role>`, then `default`. |
+
+A basename that no longer exists falls back to `default.yml` instead of
+skipping ansible. The playbook name carries no system or profile: both
+are resolved when the play runs.
 
 Edit the file directly:
 
 ```toml
 [data]
-  playbook = "fedora-personal"
+  playbook = "default"
 ```
 
 Or delete the config to re-prompt for everything:
