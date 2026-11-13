@@ -1,0 +1,41 @@
+---
+- name: Wait for the package manager to release the repo lock
+  ansible.builtin.shell: |
+    set -eu
+    python3 - <<'PY'
+    import fcntl
+    import os
+    import sys
+    import time
+
+    LOCKS = (
+        "/var/lib/dnf/system-repo.lock",
+        "/var/lib/dnf/transaction_lock.pid",
+    )
+    deadline = time.time() + {{ dnf_lock_timeout }}
+
+    def is_free(path):
+        try:
+            fd = os.open(path, os.O_RDWR)
+        except (FileNotFoundError, PermissionError):
+            return True
+        try:
+            fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            fcntl.lockf(fd, fcntl.LOCK_UN)
+            return True
+        except OSError:
+            return False
+        finally:
+            os.close(fd)
+
+    while time.time() < deadline:
+        if all(is_free(path) for path in LOCKS):
+            sys.exit(0)
+        time.sleep(2)
+
+    print("WARN: the dnf repo lock is still held; continuing anyway", file=sys.stderr)
+    PY
+  changed_when: false
+  become: true

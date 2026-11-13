@@ -1,0 +1,39 @@
+---
+- name: Look for the {{ layer_name }} layer file
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/vars/{{ layer_dir }}/{{ layer_file }}.yml"
+  register: layer_file_stat
+
+- name: Load the {{ layer_name }} layer file
+  ansible.builtin.include_vars:
+    file: "{{ layer_file_stat.stat.path }}"
+    name: "{{ layer_name }}"
+  when: layer_file_stat.stat.exists
+
+- name: Merge the {{ layer_name }} map values
+  ansible.builtin.set_fact:
+    "{{ entry.key }}": "{{ (vars[entry.key] | default({})) | combine(entry.value, recursive=True) }}"
+  loop: "{{ (vars[layer_name] | default({})).get('merge', {}) | dict2items }}"
+  loop_control:
+    loop_var: entry
+
+- name: Apply the {{ layer_name }} overrides
+  ansible.builtin.set_fact:
+    "{{ entry.key }}": "{{ entry.value }}"
+  loop: "{{ (vars[layer_name] | default({})).get('override', {}) | dict2items }}"
+  loop_control:
+    loop_var: entry
+
+- name: Merge the {{ layer_name }} list additions
+  ansible.builtin.set_fact:
+    "{{ entry.key }}": "{{ (vars[entry.key] | default([])) + (entry.value | reject('in', vars[entry.key] | default([])) | list) }}"
+  loop: "{{ (vars[layer_name] | default({})).get('add', {}) | dict2items }}"
+  loop_control:
+    loop_var: entry
+
+- name: Merge the {{ layer_name }} list removals
+  ansible.builtin.set_fact:
+    "{{ entry.key }}": "{{ (vars[entry.key] | default([])) | reject('in', entry.value) | list }}"
+  loop: "{{ (vars[layer_name] | default({})).get('remove', {}) | dict2items }}"
+  loop_control:
+    loop_var: entry

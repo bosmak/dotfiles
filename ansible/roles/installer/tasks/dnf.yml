@@ -7,6 +7,12 @@
   loop: "{{ packages_url }}"
   when: packages_url | length > 0
   become: true
+  register: dnf_result
+  until: >-
+    dnf_result is succeeded or
+    (dnf_retry_errors | select('in', (dnf_result.msg | default('')) ~ (dnf_result.stderr | default(''))) | list | length == 0)
+  retries: "{{ dnf_lock_retries }}"
+  delay: "{{ dnf_lock_delay }}"
 
 - name: Install packages (dnf)
   ansible.builtin.dnf:
@@ -15,6 +21,12 @@
   loop: "{{ packages }}"
   when: packages | length > 0
   become: true
+  register: dnf_result
+  until: >-
+    dnf_result is succeeded or
+    (dnf_retry_errors | select('in', (dnf_result.msg | default('')) ~ (dnf_result.stderr | default(''))) | list | length == 0)
+  retries: "{{ dnf_lock_retries }}"
+  delay: "{{ dnf_lock_delay }}"
 
 - name: Replace packages (dnf)
   ansible.builtin.dnf:
@@ -24,3 +36,9 @@
   loop: "{{ packages_replace }}"
   when: packages_replace | length > 0
   become: true
+  register: dnf_result
+  until: >-
+    dnf_result is succeeded or
+    (dnf_retry_errors | select('in', (dnf_result.msg | default('')) ~ (dnf_result.stderr | default(''))) | list | length == 0)
+  retries: "{{ dnf_lock_retries }}"
+  delay: "{{ dnf_lock_delay }}"

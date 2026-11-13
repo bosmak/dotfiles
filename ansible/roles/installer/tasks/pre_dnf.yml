@@ -1,4 +1,8 @@
 ---
+- name: Wait for the package manager to release the repo lock
+  ansible.builtin.import_tasks: dnf_lock.yml
+  when: ansible_pkg_mgr in ['dnf', 'dnf5']
+
 - name: Install packages from URL (dnf)
   ansible.builtin.dnf:
     name: "{{ item }}"
@@ -7,6 +11,12 @@
   loop: "{{ pre_packages_url }}"
   when: pre_packages_url | length > 0
   become: true
+  register: dnf_result
+  until: >-
+    dnf_result is succeeded or
+    (dnf_retry_errors | select('in', (dnf_result.msg | default('')) ~ (dnf_result.stderr | default(''))) | list | length == 0)
+  retries: "{{ dnf_lock_retries }}"
+  delay: "{{ dnf_lock_delay }}"
 
 - name: Add extra repos (dnf/COPR)
   ansible.builtin.command: dnf copr enable -y {{ item }}
@@ -14,6 +24,12 @@
   when: extra_repos | length > 0
   become: true
   changed_when: false
+  register: dnf_result
+  until: >-
+    dnf_result is succeeded or
+    (dnf_retry_errors | select('in', (dnf_result.msg | default('')) ~ (dnf_result.stderr | default(''))) | list | length == 0)
+  retries: "{{ dnf_lock_retries }}"
+  delay: "{{ dnf_lock_delay }}"
 
 - name: Install pre packages (dnf)
   ansible.builtin.dnf:
@@ -22,6 +38,12 @@
   loop: "{{ pre_packages }}"
   when: pre_packages | length > 0
   become: true
+  register: dnf_result
+  until: >-
+    dnf_result is succeeded or
+    (dnf_retry_errors | select('in', (dnf_result.msg | default('')) ~ (dnf_result.stderr | default(''))) | list | length == 0)
+  retries: "{{ dnf_lock_retries }}"
+  delay: "{{ dnf_lock_delay }}"
 
 - name: Lock package versions
   ansible.builtin.shell: |
@@ -34,8 +56,20 @@
   when: locked_packages | length > 0
   become: true
   changed_when: false
+  register: dnf_result
+  until: >-
+    dnf_result is succeeded or
+    (dnf_retry_errors | select('in', (dnf_result.msg | default('')) ~ (dnf_result.stderr | default(''))) | list | length == 0)
+  retries: "{{ dnf_lock_retries }}"
+  delay: "{{ dnf_lock_delay }}"
 
 - name: Refresh dnf cache
   ansible.builtin.dnf:
     update_cache: true
   become: true
+  register: dnf_result
+  until: >-
+    dnf_result is succeeded or
+    (dnf_retry_errors | select('in', (dnf_result.msg | default('')) ~ (dnf_result.stderr | default(''))) | list | length == 0)
+  retries: "{{ dnf_lock_retries }}"
+  delay: "{{ dnf_lock_delay }}"

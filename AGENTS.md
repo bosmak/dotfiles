@@ -75,7 +75,16 @@ tools/                       one-off setup scripts (not auto-used)
     lint-scripts.sh          renders chezmoi templates, then runs
                              shellcheck (bash) or `zsh -f -n` (zsh)
 ansible/                     system provisioning (OS-aware)
-  playbooks/fedora-personal.yml
+  playbooks/
+    fedora-personal.yml     binds system + profile, then the machine
+    tasks/
+      apply-layer.yml       loads and merges one variable layer
+    vars/                    variable layers (see below)
+      system/fedora.yml     OS baseline (any Fedora machine)
+      profile/
+        fedora-personal.yml persona on top of the system baseline
+      machines/
+        <hostname>.yml       hardware specifics for this machine
   roles/installer/           pure data-driven installer role
     README.md                full role documentation
     defaults/main.yml        variables consumed by the role
@@ -108,12 +117,73 @@ mise.toml                    repo-local mise tool pins (betterleaks, prek,
 ```
 
 The `installer` role is pure-data driven — add new knobs (packages,
-flatpaks, repos, pre-install commands, etc.) in
-`ansible/playbooks/fedora-personal.yml`. For new scenarios, create a
+flatpaks, repos, pre-install commands, etc.) in the **variable
+layers** under `ansible/playbooks/vars/`. For new scenarios, create a
 new `ansible/playbooks/<os>-<role>.yml`; the prompt script
 auto-discovers it. See `ansible/roles/installer/README.md` for the
 full variable list grouped by phase, and
 `ansible/roles/installer/defaults/main.yml` for defaults.
+
+## Variable layers (system → profile → machine)
+
+The repo is cloned on every machine, so anything committed here is
+identical everywhere. Three layers are merged in order, each one
+refining the previous:
+
+```
+ansible/playbooks/vars/system/<system>.yml            OS baseline
+ansible/playbooks/vars/profile/<system>-<profile>.yml persona
+ansible/playbooks/vars/machines/<hostname>.yml         hardware
+```
+
+The playbook binds the first two (`system: fedora`,
+`profile: personal`); the third is picked by hostname. Every layer is
+**optional** — a missing file simply contributes nothing.
+
+Layers are named `<system>-<profile>` because a profile is always
+shaped by its system (dnf vs brew, flatpaks vs casks): a future
+`macos-personal.yml` re-lists the personal apps on purpose.
+
+Each layer file uses the same four sections:
+
+| Section    | Meaning                                                     |
+| ---------- | ----------------------------------------------------------- |
+| `add`      | append to a list (order preserved, duplicates skipped)      |
+| `remove`   | subtract from a list                                        |
+| `merge`    | deep-merge into a map (`combine`, recursive — lists inside are **replaced**) |
+| `override` | replace the value entirely                                  |
+
+```yaml
+# ansible/playbooks/vars/machines/<hostname>.yml
+add:
+  packages: [nvidia-vaapi-driver]
+remove:
+  packages: [steam]
+override:
+  keyboard: {layout: us, model: pc105, variant: alt-intl, options: []}
+```
+
+The machine is identified by `-e machine_name=<hostname>` (passed by
+`.chezmoiscripts/run_onchange_after_50-ansible.sh.tmpl` from
+`.chezmoi.hostname`), falling back to the `ansible_hostname` fact.
+
+Precedence notes (verified on ansible-core 2.20):
+
+- Within a layer the sections apply in the order `merge` →
+  `override` → `add` → `remove`, so a layer's own commands can
+  reference values it defines.
+- A layer is templated **when it is merged** — a later layer that
+  changes a value referenced by an earlier layer's command has to
+  re-declare that command.
+- `set_fact` beats `vars_files`, `include_vars`, `group_vars`,
+  `host_vars` and role defaults, so the merged value is what the
+  `installer` role sees. Data passed as **role params** (`vars:`
+  under `roles:`) would beat the merge instead — keep it in layers.
+- Use `reject('in', ...)` for list merges — `union`/`difference` are
+  set-based and shuffle the order (matters for
+  `post_install_commands`).
+- Layer files are templated at merge time, so `gather_facts` must be
+  on (it is) for `ansible_env` to be available.
 
 ## Where to put things
 
@@ -122,7 +192,9 @@ full variable list grouped by phase, and
 | A new dotfile                   | Drop it at repo root with `dot_` prefix (or under `dot_config/`) |
 | An OS- or role-aware dotfile    | Rename to `*.tmpl` and use `{{ .role }}` / `.chezmoi.osRelease.id` |
 | A new `[data]` template variable| Update the schema block above, the table below, **both** prompt scripts (`.chezmoiscripts/run_onchange_before_10-…` and `tools/chezmoi-init.sh`) |
-| A new package on Fedora         | `ansible/playbooks/fedora-personal.yml` (`packages:` list)     |
+| A new package on Fedora         | `ansible/playbooks/vars/system/fedora.yml` (`add.packages`) or `vars/profile/fedora-personal.yml` for personal apps |
+| A setting for one machine only  | `ansible/playbooks/vars/machines/<hostname>.yml` (`add`/`remove`/`merge`/`override`) |
+| A new persona (work, vm, …)     | `ansible/playbooks/vars/profile/<system>-<profile>.yml` + a playbook binding it |
 | Installer role defaults/flags   | `ansible/roles/installer/defaults/main.yml`                    |
 | A new OS×role provisioning path| `ansible/playbooks/<os>-<role>.yml` (auto-discovers in prompt) |
 | A new apply-time script         | `.chezmoiscripts/run_<when>_<NN>-<name>.sh.tmpl` (see [chezmoi run_onchange docs](https://www.chezmoi.io/docs/usage-guides/manage-machine-dotfiles/)) |

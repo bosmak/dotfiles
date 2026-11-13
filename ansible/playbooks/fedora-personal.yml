@@ -4,167 +4,30 @@
   connection: local
   gather_facts: true
 
+  vars:
+    system: fedora
+    profile: personal
+    machine_id: "{{ machine_name | default(ansible_hostname, true) }}"
+
+    layers:
+      - name: system
+        dir: system
+        file: "{{ system }}"
+      - name: profile
+        dir: profile
+        file: "{{ system }}-{{ profile }}"
+      - name: machine
+        dir: machines
+        file: "{{ machine_id }}"
+
+  pre_tasks:
+    - name: Apply the system, profile and machine layers
+      ansible.builtin.include_tasks: tasks/apply-layer.yml
+      loop: "{{ layers }}"
+      vars:
+        layer_name: "{{ item.name }}_layer"
+        layer_dir: "{{ item.dir }}"
+        layer_file: "{{ item.file }}"
+
   roles:
     - role: installer
-      vars:
-        extra_repos:
-          - jdxcode/mise
-          - atim/starship
-          - bosmak/copr
-        pre_packages:
-          - rpmfusion-free-release
-          - rpmfusion-nonfree-release
-          - python3-dnf-plugin-versionlock
-          - curl
-        pre_install_commands:
-          - command: "curl -fsSL https://yum.enpass.io/enpass-yum.repo -o /etc/yum.repos.d/enpass-yum.repo"
-            creates: /etc/yum.repos.d/enpass-yum.repo
-            become: true
-        packages:
-          - firefox
-          - vim
-          - wget
-          - power-profiles-daemon
-          - cups-pk-helper
-          - kf6-kimageformats
-          - i2c-tools
-          - adw-gtk3-theme
-          - qt6ct
-          - qt5ct
-          - xdg-user-dirs
-          - xdg-utils
-          - xdg-desktop-portal
-          - xdg-desktop-portal-gnome
-          - xdg-desktop-portal-gtk
-          - xdg-desktop-portal-wlr
-          - flatpak
-          - flatseal
-          - zsh
-          - ripgrep
-          - steam
-          - steam-devices
-          - gamemode
-          - fcitx5
-          - fcitx5-configtool
-          - fcitx5-gtk
-          - fcitx5-gtk3
-          - fcitx5-gtk4
-          - fcitx5-qt
-          - mise
-          - starship
-          - wl-clipboard
-          - xclip
-          - cups
-          - cups-filters
-          - cups-pk-helper
-          - xwayland-satellite
-          - pvpn
-          - plocate
-          - clip-bridge
-          - liberation-fonts-all
-          - rsms-inter-vf-fonts
-          - fira-code-fonts
-          - levien-inconsolata-fonts
-          - google-noto-fonts-all
-          - xorg-x11-font-utils
-          - fontconfig
-          - enpass
-          - dux-files
-          - steam-fix-trayicon
-          - iwlwifi-mvm-firmware
-          - iwlbluetooth-firmware
-          - wireless-regdb
-          - NetworkManager-wifi
-          - wpa_supplicant
-          - NetworkManager-bluetooth
-          - fprintd
-          - fprintd-pam
-          - pam-u2f
-          - podman
-          - podman-compose
-          - solidcraft
-          - pciutils
-          - usbutils
-          - gnome-keyring
-          - gnome-keyring-pam
-          - seahorse
-        flatpak_repos:
-          - name: flathub
-            url: https://dl.flathub.org/repo/flathub.flatpakrepo
-        flatpak:
-          - com.discordapp.Discord
-          - org.freecad.FreeCAD
-          - com.heroicgameslauncher.hgl
-          - org.freedesktop.Platform.VulkanLayer.gamescope//25.08
-          - com.vysp3r.ProtonPlus
-          - com.bitwarden.desktop
-          - org.gtk.Gtk3theme.adw-gtk3
-          - org.gtk.Gtk3theme.adw-gtk3-dark
-          - me.amankhanna.opendeck
-          - org.angryip.ipscan
-          - app.zen_browser.zen
-          - com.orcaslicer.OrcaSlicer
-          - app.ytmdesktop.ytmdesktop
-          - org.videolan.VLC
-          - io.github.tobagin.karere
-          - org.gnome.Calculator
-          - dev.zed.Zed
-          - org.gnome.Firmware
-          - io.github.flattool.Ignition
-        packages_replace:
-          - old: ffmpeg-free
-            new: ffmpeg
-        github_repositories:
-          - name: zap
-            repository: zap-zsh/zap
-            dest: "{{ ansible_env.HOME }}/.local/share/zap"
-            depth: 1
-            update: false
-        keyboard:
-          layout: us
-          model: pc105
-          variant: alt-intl
-          options: []
-        user_groups:
-          - i2c
-          - pvpn
-        post_install_vars:
-          dms_hidden_apps:
-          - fcitx5-configtool
-          - qt5ct
-          - qt6ct
-          dms_app_overrides:
-            enpass:
-              envVars: XDG_CURRENT_DESKTOP=GNOME
-        post_install_commands:
-          - command: mise trust
-            chdir: "{{ ansible_env.HOME }}"
-          - command: mise install --yes
-            chdir: "{{ ansible_env.HOME }}"
-          - command: >
-              for id in calculator wallhavenCarousel niriWorkspaceBar caffeineRedesigned;
-              do dms plugins install "$id";
-              rc=$?;
-              [ $rc -eq 0 ] || [ $rc -eq 1 ] || echo "id=$id failed (rc=$rc)";
-              done
-            chdir: "{{ ansible_env.HOME }}"
-          - command: |
-              #!/usr/bin/env bash
-              set -eu
-              dir="$HOME/.local/state/dms"
-              session="$dir/session.json"
-              mkdir -p "$dir" 2>/dev/null || exit 0
-              [ -w "$dir" ] || exit 0
-              [ -s "$session" ] || echo '{}' > "$session"
-              hidden='{{ post_install_vars.dms_hidden_apps | default([]) | to_json }}'
-              overrides='{{ post_install_vars.dms_app_overrides | default({}) | to_json }}'
-              filter='(if ($hidden | length) > 0 then .hiddenApps = $hidden else . end) | (if ($overrides | length) > 0 then .appOverrides = ((.appOverrides // {}) * $overrides) else . end)'
-              current=$(jq -c . "$session")
-              merged=$(jq -c --argjson hidden "$hidden" --argjson overrides "$overrides" "$filter" "$session")
-              if [ "$merged" != "$current" ]; then
-                tmp="$session.ansible.$$"
-                jq --argjson hidden "$hidden" --argjson overrides "$overrides" "$filter" "$session" > "$tmp"
-                mv "$tmp" "$session"
-                systemctl --user restart dms
-              fi
-            chdir: "{{ ansible_env.HOME }}"

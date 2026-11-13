@@ -1,0 +1,10 @@
+---
+add:
+  pre_packages:
+    - curl
+    - python3-dnf-plugin-versionlock
+  packages:
+    - vim
+    - wget
+    - pciutils
+    - usbutils

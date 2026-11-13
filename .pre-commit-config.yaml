@@ -3,10 +3,12 @@ repos:
     rev: v0.1.0
     hooks:
       - id: chezmoi-enforce-portability
-        exclude: ^ansible/.*\.(yml|yaml)$
+        # The hook scans the whole staged snapshot (pass_filenames: false),
+        # so path filters never apply; only expressions can be ignored.
         args:
           - --ignore-expression=.playbook
           - --ignore-expression=.var
+          - --ignore-expression=.role
 
   - repo: https://github.com/betterleaks/betterleaks
     rev: v1.7.1

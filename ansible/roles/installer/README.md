@@ -74,6 +74,31 @@ All listed in `defaults/main.yml`. Grouped by phase:
 | `pre_packages` | OS-level bootstrap deps installed via dnf (e.g. `rpmfusion-free-release`, `python3-dnf-plugin-versionlock`). |
 | `locked_packages` | `versionlock add <name>-<ver>` for anything you don't want drifted. Runs last in this phase so it pins what we just installed. |
 
+### Lock contention (dnf)
+Another package manager — usually PackageKit refreshing in the
+background, sometimes a manual `dnf upgrade` — can hold the dnf repo
+lock while this playbook runs. dnf then fails with:
+
+```
+Failed to acquire system repo lock for reading, lock located at "/var/lib/dnf/system-repo.lock"
+```
+
+Two mechanisms deal with it:
+
+1. **Wait** — `dnf_lock.yml` blocks until the lock is free (probing
+   both POSIX record locks and BSD `flock`, since libdnf does not use
+   the same one everywhere). It runs first in the `pre_dnf` phase.
+2. **Retry** — every dnf task retries while the error looks like lock
+   contention. A *different* error (a package that does not exist, a
+   broken repo) is **not** retried and fails the play immediately.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `dnf_lock_timeout` | `120` | Seconds to wait for the lock to be released. |
+| `dnf_lock_retries` | `6` | How many times a blocked dnf task is retried. |
+| `dnf_lock_delay` | `10` | Seconds between retries. |
+| `dnf_retry_errors` | `[lock, already in progress]` | Error fragments that mean "dnf is busy". |
+
 ### `pre_install_commands` / `post_install_commands`
 Arbitrary shell, run with `become: true` if requested. Use
 `creates:` to make them idempotent.
@@ -114,27 +139,49 @@ Writes the xkb layout + options via `dconf`. Linux-only.
 
 ## Usage
 
-The playbook just maps variables in:
+The knobs live in the variable layers under
+`ansible/playbooks/vars/`, merged in order (system → profile →
+machine) before the role runs:
 
 ```yaml
-- hosts: localhost
-  roles:
-    - role: installer
-      vars:
-        pre_packages:
-          - rpmfusion-free-release
-          - python3-dnf-plugin-versionlock
-        extra_repos:
-          - jdxcode/mise
-        pre_packages_url:
-          - https://repo.protonvpn.com/.../protonvpn-stable-release-1.0.4-1.noarch.rpm
-        packages:
-          - firefox
-          - mise
-        locked_packages:
-          - name: xwayland-satellite
-            version: "0.8.1-1.fc44"
+# ansible/playbooks/vars/system/fedora.yml — OS baseline
+add:
+  extra_repos:
+    - jdxcode/mise
+  pre_packages:
+    - rpmfusion-free-release
+    - python3-dnf-plugin-versionlock
+  pre_packages_url:
+    - https://repo.protonvpn.com/.../protonvpn-stable-release-1.0.4-1.noarch.rpm
+  packages:
+    - firefox
+    - mise
+  locked_packages:
+    - name: xwayland-satellite
+      version: "0.8.1-1.fc44"
 ```
+
+A layer can then refine the previous one — a profile on top of the
+system baseline, a machine on top of the profile:
+
+```yaml
+# ansible/playbooks/vars/profile/fedora-personal.yml
+add:
+  packages: [steam]              # appended to the base list
+# ansible/playbooks/vars/machines/<hostname>.yml
+add:
+  packages: [iwlwifi-mvm-firmware]
+remove:
+  packages: [steam]              # subtracted from the list
+override:
+  keyboard: {layout: br}         # replaces the base value
+```
+
+The merge happens in `ansible/playbooks/tasks/apply-layer.yml`
+(`set_fact`, which outranks `vars_files`, `include_vars`,
+`group_vars`/`host_vars` and role defaults). The layer data therefore
+**must** stay out of the role params — data passed there would win
+over the merge.
 
 ## Conventions
 

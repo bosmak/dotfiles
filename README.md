@@ -42,6 +42,37 @@ ansible playbook when `ansible/` has changed. The `playbook` setting
 in `~/.config/chezmoi/chezmoi.toml` controls whether ansible runs at
 all — see the next section.
 
+## Variable layers: system → profile → machine
+
+The playbook binds a system and a profile, and the machine is detected
+from the hostname:
+
+```
+ansible/playbooks/vars/system/fedora.yml            OS baseline
+ansible/playbooks/vars/profile/fedora-personal.yml persona
+ansible/playbooks/vars/machines/<hostname>.yml   hardware
+```
+
+Each layer is optional and refines the previous one:
+
+```yaml
+# ansible/playbooks/vars/machines/<hostname>.yml
+add:
+  packages: [nvidia-vaapi-driver]   # appended to the list
+remove:
+  packages: [steam]                 # subtracted from the list
+merge:
+  post_install_vars: {dms_hidden_apps: [my-app]}
+override:
+  keyboard: {layout: br}            # replaces the value
+```
+
+The machine is matched by hostname — the apply script passes
+`-e machine_name=<hostname>` to ansible, and the playbook falls back to
+the `ansible_hostname` fact. Create one layer file per machine that
+needs it; the others just get the system + profile layers.
+
+
 ## Changing which ansible playbook runs
 
 The `playbook` line in `~/.config/chezmoi/chezmoi.toml` controls what

@@ -1,0 +1,5 @@
+---
+add:
+  packages:
+    - iwlwifi-mvm-firmware
+    - iwlbluetooth-firmware

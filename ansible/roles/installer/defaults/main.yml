@@ -14,3 +14,10 @@ github_release_binaries: []
 keyboard: {}
 user_groups: []
 post_install_commands: []
+
+dnf_lock_timeout: 120
+dnf_lock_retries: 6
+dnf_lock_delay: 10
+dnf_retry_errors:
+  - lock
+  - already in progress

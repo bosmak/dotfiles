@@ -47,5 +47,9 @@ if [[ -r /dev/tty ]] 2>/dev/null; then
     ANSIBLE_BECOME_FLAGS="--ask-become-pass"
 fi
 
-echo "==> Running ansible: $PLAYBOOK"
-(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS "${PLAYBOOK#"$ANSIBLE_DIR"/}")
+# Machine identity, used by the playbooks to pick the per-machine
+# overlay (ansible/playbooks/vars/machines/<machine_name>.yml).
+MACHINE_NAME="{{ .chezmoi.hostname }}"
+
+echo "==> Running ansible: $PLAYBOOK (machine: $MACHINE_NAME)"
+(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS -e "machine_name=$MACHINE_NAME" "${PLAYBOOK#"$ANSIBLE_DIR"/}")
