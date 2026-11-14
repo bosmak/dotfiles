@@ -3,4 +3,17 @@ binds {
     Mod+B hotkey-overlay-title="Open Browser" { spawn "firefox"; }
 
     Mod+Shift+W { spawn "dms" "ipc" "wallhavenCarousel" "toggle"; }
+
+    F2 hotkey-overlay-title="PoE Wide/Fullscreen Toggle" {
+        spawn "sh" "-c" "exec \"$HOME/.config/niri/scripts/poe-toggle.sh\"";
+    }
+    F5 repeat=false allow-inhibiting=false hotkey-overlay-title="PoE: /hideout" {
+        spawn "sh" "-c" "sleep 0.20; exec \"$HOME/.config/niri/scripts/poe-hideout.sh\"";
+    }
+    Mod+G hotkey-overlay-title="Focus Game Workspace" { focus-workspace "game"; }
+
+    Ctrl+Up { spawn "sh" "-c" "exec \"$HOME/.config/niri/scripts/poe-nudge.sh\" step up"; }
+    Ctrl+Down { spawn "sh" "-c" "exec \"$HOME/.config/niri/scripts/poe-nudge.sh\" step down"; }
+    Shift+Up { spawn "sh" "-c" "exec \"$HOME/.config/niri/scripts/poe-nudge.sh\" pixel up"; }
+    Shift+Down { spawn "sh" "-c" "exec \"$HOME/.config/niri/scripts/poe-nudge.sh\" pixel down"; }
 }

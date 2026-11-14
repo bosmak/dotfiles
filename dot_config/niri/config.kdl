@@ -137,6 +137,7 @@ overview {
 environment {
   XDG_CURRENT_DESKTOP "niri"
 }
+spawn-at-startup "sh" "-c" "exec \"$HOME/.config/niri/scripts/game-bar-workspace-watch.sh\""
 hotkey-overlay {
     skip-at-startup
 }
@@ -248,4 +249,6 @@ include optional=true "dms/binds.kdl"
 include optional=true "dms/outputs.kdl"
 include optional=true "dms/cursor.kdl"
 include optional=true "dms/input.kdl"
+include optional=true "poe-overrides.kdl"
+include optional=true "game-workspace.kdl"
 include optional=true "binds.kdl"

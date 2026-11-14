@@ -107,6 +107,7 @@ add:
       update: false
   user_groups:
     - i2c
+    - input
     - pvpn
   post_install_commands:
     - command: mise trust

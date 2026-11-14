@@ -78,7 +78,7 @@ for file in "$@"; do
     rc=0
     output=$(
         case "$lang" in
-            bash) "$checker" -s bash "$target" ;;
+            bash) "$checker" -x -s bash "$target" ;;
             zsh) "$checker" -f -n "$target" ;;
         esac 2>&1
     ) || rc=$?
