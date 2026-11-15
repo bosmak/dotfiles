@@ -66,15 +66,17 @@ and `tools/chezmoi-init.sh`.
 
 ```
 .chezmoiscripts/             scripts run by chezmoi (auto-triggered)
-  run_onchange_before_00     install missing prereqs (git, curl, jq, unzip,
-                             ansible-core, mise, gum)
+  run_onchange_before_00     install missing prereqs (git, curl, jq, gum,
+                             ansible-core)
   run_onchange_before_10     prompt for user info, write config (no-op once
                              chezmoi.toml exists)
   run_onchange_after_50      run the ansible playbook (selected via
                              chezmoi.toml `playbook`; legacy OS+role
                              fallback when unset)
+  run_after_60               drop the bootstrap chezmoi (~/.local/bin or
+                             ~/bin) once mise provides chezmoi
 tools/                       one-off setup scripts (not auto-used)
-  chezmoi-init.sh            full bootstrap (prereqs + clone + prompt + apply)
+  chezmoi-init.sh            bootstrap (prereqs + clone + apply)
   setup-btrfs-snapper/       snapper + btrfsmaintenance helpers
   win-fonts-script/          install Windows fonts
   pre-commit/                lint helpers used by .pre-commit-config.yaml
@@ -231,6 +233,22 @@ runs.** This means:
 If you add a new `run_onchange` script, copy the hash pattern from an
 existing one and choose a `bash -c` body that changes whenever the
 script's triggers change.
+
+A script that must run on **every** apply uses `run_after_<NN>-<name>.sh`
+with no hash comment — for example `run_after_60-chezmoi-handover.sh`,
+which drops the bootstrap chezmoi once mise provides one.
+
+## Package ownership
+
+The apply-time prereqs script installs `git curl jq gum ansible-core`.
+**mise is not in that list**: it ships from the `jdxcode/mise` COPR,
+which only the ansible playbook enables (`extra_repos` →
+`pre_dnf.yml`). The playbook owns mise, and its `mise install --yes`
+post-install command installs the tools declared in
+`~/.config/mise/config.toml` — including chezmoi. A prereqs script that
+installed mise with a plain `dnf install mise` would abort the whole
+transaction on a machine where the COPR is not enabled yet, which kills
+the apply before the prompt and the playbook run.
 
 ## Ansible playbook selection
 

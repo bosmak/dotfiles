@@ -53,8 +53,7 @@ projects() {
     fi
   done
 
-  # Preserve the original "new-" convention while allowing any missing
-  # project to be created too.
+  # Accept "new-foo" as a synonym for "foo".
   local target=$requested
   if [[ $target == new-* ]]; then
     target=${target#new-}
@@ -65,9 +64,8 @@ projects() {
     return 1
   fi
 
-  # Find all Git repositories below the workspace. A requested path can
-  # match a repository exactly, contain repositories, or identify one by a
-  # unique path suffix (for example, "mlops/api").
+  # A requested path can match a repository exactly, contain repositories,
+  # or identify one by a unique path suffix (for example, "mlops/api").
   local -a repo_roots
   local repo_root
   while IFS= read -r -d '' repo_root; do

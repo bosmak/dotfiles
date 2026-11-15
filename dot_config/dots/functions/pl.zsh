@@ -65,7 +65,7 @@ pl() {
     fi
   fi
 
-  # Collect the repositories of the workspace.
+  # Find all Git repositories below the workspace.
   if (( $+functions[_project_repository_roots] )); then
     while IFS= read -r -d '' repo_root; do
       repo_roots+=("$repo_root")
@@ -96,7 +96,6 @@ pl() {
     _pl_kind[$key]=repo
   done
 
-  # Gather the Git status of every repository.
   _pl_branch=()
   _pl_status=()
   for key in "${(@k)_pl_kind}"; do
@@ -106,7 +105,6 @@ pl() {
     _pl_status[$key]=$_pl_s_status
   done
 
-  # Column widths.
   _pl_name_width=0
   _pl_branch_width=0
   for key in "${(@k)_pl_kind}"; do
@@ -116,7 +114,6 @@ pl() {
     fi
   done
 
-  # Root of the tree.
   local root_label="."
   if [[ -n $root_rel ]]; then
     root_label=$root_rel

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Prompt for user info and write ~/.config/chezmoi/chezmoi.toml.
-# Runs before apply. The hash below is tied to the config file's
-# existence/size, so deleting the config triggers a re-run on the
-# next `chezmoi apply`.
+# Prompt for user info and write ~/.config/chezmoi/chezmoi.toml. The hash
+# below is tied to the config file's existence/size, so deleting the config
+# triggers a re-run on the next `chezmoi apply`.
 # Config state hash: {{ output "bash" "-c" "if [ -f $HOME/.config/chezmoi/chezmoi.toml ]; then stat -c %s $HOME/.config/chezmoi/chezmoi.toml; else echo missing; fi" | trim }}
 
 set -euo pipefail

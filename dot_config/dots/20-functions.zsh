@@ -1,5 +1,5 @@
 # Loads every regular file in ./functions/ (shallow glob, alphabetical).
-# Drop new snippets in ~/.config/dots/functions/ and they'll be picked up
+# Drop new snippets in ~/.config/dots/functions/ and they are picked up
 # automatically — no edits to ~/.zshrc required.
 #
 # The glob qualifiers:

@@ -6,19 +6,17 @@ provisioning handled by [ansible](https://www.ansible.com/) via
 
 ## Bootstrap a new machine
 
-**One-liner via the custom bootstrap script** (handles prereqs + clone + prompt + apply):
-
 ```bash
-export GITHUB_USERNAME=bosmak
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/$GITHUB_USERNAME/dotfiles/main/tools/chezmoi-init.sh)" -- $GITHUB_USERNAME
+# make sure `git` and `curl` are available
+sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply bosmak
 ```
 
-**Or via standard chezmoi init** (the bootstrap script is also re-runnable for re-prompting):
-```bash
-sudo dnf install -y git curl jq unzip
-export GITHUB_USERNAME=bosmak
-sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply "$GITHUB_USERNAME"
-```
+`git` is needed for the clone, which happens before the apply can
+install anything. `jq`, `gum` and `ansible-core` are installed during
+the apply, `mise` by the ansible playbook.
+
+The apply prompts for the user info, so re-running `chezmoi apply` after
+deleting `~/.config/chezmoi/chezmoi.toml` re-prompts for it.
 
 On first run the user info script will prompt for:
 - Editor command (default: `vim`) — used by `chezmoi edit` and by git

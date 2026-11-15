@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 #
-# install-windows-fonts.sh
-#
 # Downloads the Windows 11 Enterprise evaluation ISO from Microsoft's
 # fwlink, extracts install.wim with 7z, copies every .ttf/.ttc out of
 # 1/Windows/Fonts/ into /usr/local/share/fonts/MicrosoftFonts/, and then
@@ -13,14 +11,11 @@
 # WINDOWS_ISO_FWLINK_ID   pin a specific id (skips auto-resolution)
 # WINDOWS_EVAL_PAGE        override the page to scrape for the current id
 #
-# If WINDOWS_ISO_FWLINK_ID is unset, the script scrapes
-# $WINDOWS_EVAL_PAGE for the first `go.microsoft.com/fwlink/?linkid=N`
-# it finds and uses that. Microsoft rotates the id every 6-12 months when
-# they refresh the eval center; the page URL and link shape are stable.
+# Without WINDOWS_ISO_FWLINK_ID the script scrapes $WINDOWS_EVAL_PAGE for
+# the first `go.microsoft.com/fwlink/?linkid=N` it finds. Microsoft rotates
+# the id every 6-12 months; the page URL and link shape are stable.
 
 set -euo pipefail
-
-# ---- configuration ---------------------------------------------------------
 
 WINDOWS_EVAL_PAGE="${WINDOWS_EVAL_PAGE:-https://www.microsoft.com/en-us/evalcenter/download-windows-11-enterprise}"
 WINDOWS_ISO_FWLINK_ID="${WINDOWS_ISO_FWLINK_ID:-}"
@@ -28,31 +23,27 @@ WINDOWS_ISO_FWLINK_ID="${WINDOWS_ISO_FWLINK_ID:-}"
 DEST_DIR="/usr/local/share/fonts/MicrosoftFonts"
 FONT_PACKAGES=(fontconfig)
 
-# ---- logging helpers -------------------------------------------------------
-
 if [[ -t 1 ]]; then
     C_RESET=$'\033[0m'; C_INFO=$'\033[1;34m'; C_OK=$'\033[1;32m'; C_WARN=$'\033[1;33m'; C_ERR=$'\033[1;31m'
 else
     C_RESET=""; C_INFO=""; C_OK=""; C_WARN=""; C_ERR=""
 fi
 
-# All diagnostic output goes to stderr. Anything that writes to stdout must
-# be intentional "data" (e.g. resolve_fwlink_id's id) so that command
-# substitution (`id=$(...)`) only captures the intended value.
+# All diagnostic output goes to stderr. Anything on stdout must be
+# intentional "data" (e.g. resolve_fwlink_id's id) so that command
+# substitution only captures the intended value.
 log()  { printf '%s[%s]%s %s\n' "$C_INFO"  "$(date +%H:%M:%S)" "$C_RESET" "$*" >&2; }
 ok()   { printf '%s[%s]%s %s\n' "$C_OK"    "$(date +%H:%M:%S)" "$C_RESET" "$*" >&2; }
 warn() { printf '%s[%s]%s %s\n' "$C_WARN"  "$(date +%H:%M:%S)" "$C_RESET" "$*" >&2; }
 err()  { printf '%s[%s]%s %s\n' "$C_ERR"   "$(date +%H:%M:%S)" "$C_RESET" "$*" >&2; }
 die()  { err "$*"; exit 1; }
 
-# ---- fwlink resolution -----------------------------------------------------
-
 resolve_fwlink_id() {
     # The eval-center page lists every localized download variant as an
     # `<a aria-label="Download Windows 11 Enterprise ISO ... (en-US)" ...>`
-    # plus a bunch of unrelated fwlink ids in the nav/footer. We match the
-    # ISO <a> by its aria-label and pull the linkid out of the same tag.
-    # Picking en-US specifically avoids the en-GB/de-DE/fr-FR/etc. duplicates.
+    # plus unrelated fwlink ids in the nav/footer. Matching the ISO <a> by
+    # its aria-label and taking the linkid from the same tag avoids the
+    # en-GB/de-DE/fr-FR/etc. duplicates.
     log "Resolving current fwlink id from $WINDOWS_EVAL_PAGE"
     local html id
     if ! html=$(curl --fail --silent --location --max-time 30 "$WINDOWS_EVAL_PAGE"); then
@@ -73,7 +64,6 @@ resolve_fwlink_id() {
     printf '%s\n' "$id"
 }
 
-# ---- preflight -------------------------------------------------------------
 
 [[ $EUID -eq 0 ]] || die "Must run as root (needs dnf, write to /usr/local, restorecon)."
 
@@ -81,7 +71,6 @@ command -v dnf  >/dev/null || die "dnf not found (Fedora/RHEL only)."
 command -v 7z   >/dev/null || die "p7zip not found. Install: dnf install p7zip p7zip-plugins."
 command -v curl >/dev/null || die "curl not found."
 
-# ---- main ------------------------------------------------------------------
 
 WORK="$(mktemp -d -t windows-fonts.XXXXXX)"
 cleanup() { rm -rf "$WORK"; }
@@ -112,9 +101,8 @@ curl --fail --location \
      --output "${WORK}/windows.iso" \
      "$ISO_URL"
 
-# Sanity-check: a real Windows ISO is several GB. If we got back something
-# small, the fwlink redirected to an HTML error page and we'd just be
-# feeding 7z garbage. Surface the diagnostic instead.
+# Sanity-check: a real Windows ISO is several GB. Something small means
+# the fwlink redirected to an HTML error page, and 7z would get garbage.
 iso_size=$(stat -c %s "${WORK}/windows.iso")
 if (( iso_size < 1073741824 )); then    # < 1 GiB
     warn "Downloaded file is only ${iso_size} bytes — not a real ISO."

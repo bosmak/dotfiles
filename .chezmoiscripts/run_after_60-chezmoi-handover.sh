@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Drops the bootstrap chezmoi once mise provides one: the dotfiles declare
+# chezmoi in the global mise config, and a leftover copy in ~/.local/bin or
+# ~/bin would shadow it on PATH.
+
+set -euo pipefail
+
+BOOTSTRAP=""
+for candidate in "$HOME/.local/bin/chezmoi" "$HOME/bin/chezmoi"; do
+    if [[ -e "$candidate" ]]; then
+        BOOTSTRAP="$candidate"
+        break
+    fi
+done
+
+[[ -n "$BOOTSTRAP" ]] || exit 0
+
+if ! command -v mise >/dev/null 2>&1; then
+    echo "==> mise not found; keeping the bootstrap chezmoi ($BOOTSTRAP)"
+    exit 0
+fi
+
+# -C keeps the lookup independent of the working directory the script runs in.
+if ! mise -C "$HOME" config get tools.chezmoi >/dev/null 2>&1; then
+    echo "==> the global mise config does not declare chezmoi; keeping $BOOTSTRAP"
+    exit 0
+fi
+
+if ! mise -C "$HOME" which chezmoi >/dev/null 2>&1; then
+    echo "==> Installing chezmoi through mise"
+    if ! mise -C "$HOME" install --yes chezmoi; then
+        echo "==> mise could not install chezmoi; keeping $BOOTSTRAP" >&2
+        exit 0
+    fi
+fi
+
+MISE_CHEZMOI="$(mise -C "$HOME" which chezmoi)"
+if [[ ! -x "$MISE_CHEZMOI" ]]; then
+    echo "==> the mise chezmoi is not executable; keeping $BOOTSTRAP" >&2
+    exit 0
+fi
+
+rm -f "$BOOTSTRAP"
+echo "==> Dropped the bootstrap chezmoi; mise manages it now ($MISE_CHEZMOI)"

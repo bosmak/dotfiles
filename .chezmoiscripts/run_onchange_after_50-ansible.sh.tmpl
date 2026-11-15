@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Re-runs the ansible playbook whenever files under ansible/ change.
-# The hash below is recomputed by chezmoi at every apply; when the
-# hash differs from the previously-rendered content, chezmoi re-executes
-# this script. Runs the playbook with --ask-become-pass so sudo can
-# prompt interactively on a TTY.
+# Re-runs the ansible playbook whenever files under ansible/ change. The
+# hash below is recomputed at every apply; when it differs from the
+# previously rendered content, chezmoi re-executes this script.
 # Ansible tree hash: {{ output "bash" "-c" (printf "cd %s && find ansible -type f -not -path '*/.ansible/*' -not -path '*/__pycache__/*' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1" .chezmoi.sourceDir) | trim }}
 
 set -euo pipefail
@@ -23,16 +21,15 @@ fi
 
 # Layer identity. The system layer follows the os-release ID (the same name
 # the layer files use) and the profile layer follows the role, so the playbook
-# carries neither in its name. An empty system id lets the playbook fall back
-# to the ansible distribution fact.
+# carries neither in its name. An empty system id falls back to the ansible
+# distribution fact.
 SYSTEM_ID="{{ if hasKey .chezmoi "osRelease" }}{{ .chezmoi.osRelease.id }}{{ end }}"
 PROFILE="{{ if hasKey . "role" }}{{ .role }}{{ else }}personal{{ end }}"
 
 # Playbook selection: the "playbook" key holds a basename (without .yml) from
 # ansible/playbooks/, or "none" to skip ansible. An unset key falls back to
-# the legacy <os>-<role> name and then to the default playbook. A configured
-# name that no longer exists falls back to the default playbook instead of
-# skipping ansible.
+# the legacy <os>-<role> name and then to the default playbook; a configured
+# name that no longer exists falls back to the default playbook too.
 PLAYBOOK_NAME="{{ if hasKey . "playbook" }}{{ .playbook }}{{ end }}"
 PLAYBOOK=""
 

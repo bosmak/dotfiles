@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# Re-installs prereqs on changes to this list. On the bootstrap path,
-# tools/chezmoi-init.sh handles this; this script is a safety net for
-# re-applies where the prereqs list changed.
-# Prereqs hash: {{ output "bash" "-c" "printf '%s\n' git curl jq unzip ansible-core mise gum | sha256sum | cut -d' ' -f1" | trim }}
+# Installs the prereqs the apply needs: git and curl for the checkout,
+# jq for the niri scripts, gum for the prompts, ansible-core for the
+# playbook. Runs before every apply; the packages are installed one at a
+# time so an unavailable one does not abort the rest.
+#
+# mise is deliberately not in this list: it ships from the jdxcode COPR,
+# which the ansible playbook enables, so the playbook owns it.
+# Prereqs hash: {{ output "bash" "-c" "printf '%s\n' git curl jq gum ansible-core | sha256sum | cut -d' ' -f1" | trim }}
 
 set -euo pipefail
 
@@ -10,12 +14,17 @@ if [[ ! -r /dev/tty ]] 2>/dev/null; then
     exit 0
 fi
 
+case "$(uname -s)" in
+    Darwin) INSTALL=(brew install) ;;
+    *) INSTALL=(sudo dnf install -y) ;;
+esac
+
 declare -A PKG_BIN=(
     [ansible-core]=ansible-playbook
 )
 
 NEED_INSTALL=()
-for pkg in git curl jq unzip ansible-core mise gum; do
+for pkg in git curl jq gum ansible-core; do
     bin="${PKG_BIN[$pkg]:-$pkg}"
     if ! command -v "$bin" >/dev/null 2>&1; then
         NEED_INSTALL+=("$pkg")
@@ -27,4 +36,6 @@ if [ ${#NEED_INSTALL[@]} -eq 0 ]; then
 fi
 
 echo "==> Installing missing prereqs: ${NEED_INSTALL[*]}"
-sudo dnf install -y "${NEED_INSTALL[@]}"
+for pkg in "${NEED_INSTALL[@]}"; do
+    "${INSTALL[@]}" "$pkg" || echo "WARN: could not install $pkg" >&2
+done

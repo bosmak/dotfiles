@@ -55,10 +55,17 @@ repository's file for that repository.
 
 - Code explains itself. No comments restating what the code does
   ("loop over the items", "increment the counter", "call the API", "return
-  the result").
+  the result") — this includes describing what the following lines print,
+  log, or decide.
 - Add a comment only where the code genuinely cannot be self-explanatory:
   a non-obvious constraint, a deliberate workaround, a subtle invariant, a
   surprising trade-off. One or two lines, never a paragraph.
+- A file header may run longer than an inline comment, but only to state
+  what the file is for and the constraint that shapes it. Three to five
+  lines, no narrative.
+- Comments must stay true in every path. Do not assert what an earlier
+  step did, what the environment contains, or what will happen later
+  unless the code guarantees it — phrase it conditionally instead.
 - No meta comments: nothing about the comment itself, about the code's
   history, about the agent, or about the work that produced it.
 - Prefer renaming or restructuring over commenting.
@@ -75,3 +82,13 @@ repository's file for that repository.
   otherwise get wrong.
 - Match the surrounding document's voice and structure; do not introduce a
   new section to narrate the process.
+- Check every factual claim against the code before writing it. Prefer
+  precise wording over absolutes ("never", "always") unless every path
+  was verified.
+
+## Before you finish
+
+- Re-read the diff against the rules in this file and fix what does not
+  comply: comments that restate the code, comments that are untrue in
+  some path, and documents that narrate the change instead of describing
+  the system.
