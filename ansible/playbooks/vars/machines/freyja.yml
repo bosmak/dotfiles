@@ -3,3 +3,4 @@ add:
   packages:
     - iwlwifi-mvm-firmware
     - iwlbluetooth-firmware
+    - cs9711-fingerprint 
