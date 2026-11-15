@@ -20,9 +20,14 @@ in `.chezmoiignore` so it never reaches the user's machine.
 ## Runtime config (not in this repo)
 
 User-specific values live in `~/.config/chezmoi/chezmoi.toml` under
-`[data]`. They are **not** committed. The repo's prompt scripts
-(`run_onchange_before_10-prompt-user-info.sh.tmpl` and
-`tools/chezmoi-init.sh`) write this file on first run.
+`[data]`. They are **not** committed. `tools/prompt-config.sh` writes
+this file on first run; it is called by `.chezmoi.toml.tmpl` and by
+`run_onchange_before_10-prompt-user-info.sh.tmpl`.
+
+The config template matters: `chezmoi init` renders it before it runs
+the apply, so the config exists when the templates are evaluated. A
+run script cannot do that — the config is read once at startup, so a
+value written during the apply would only reach the *next* apply.
 
 Full schema:
 
@@ -59,8 +64,8 @@ The editor is asked at bootstrap and stored in `[edit].command`.
 `dot_gitconfig.tmpl` reuses it for `core.editor`, so the two can never
 drift apart.
 
-When you add a new template variable, update **both** prompt scripts
-and `tools/chezmoi-init.sh`.
+When you add a new template variable, add it to `tools/prompt-config.sh`
+and to the table above.
 
 ## Repository layout
 
@@ -75,8 +80,12 @@ and `tools/chezmoi-init.sh`.
                              fallback when unset)
   run_after_60               drop the bootstrap chezmoi (~/.local/bin or
                              ~/bin) once mise provides chezmoi
+.chezmoi.toml.tmpl          renders ~/.config/chezmoi/chezmoi.toml from
+                             tools/prompt-config.sh
 tools/                       one-off setup scripts (not auto-used)
   chezmoi-init.sh            full bootstrap (prereqs + clone + prompt + apply)
+  prompt-config.sh           prompts for the user info, writes the config
+                             and prints it on stdout
   setup-btrfs-snapper/       snapper + btrfsmaintenance helpers
   win-fonts-script/          install Windows fonts
   pre-commit/                lint helpers used by .pre-commit-config.yaml
@@ -199,7 +208,7 @@ Precedence notes (verified on ansible-core 2.20):
 | ------------------------------- | -------------------------------------------------------------- |
 | A new dotfile                   | Drop it at repo root with `dot_` prefix (or under `dot_config/`) |
 | An OS- or role-aware dotfile    | Rename to `*.tmpl` and use `{{ .role }}` / `.chezmoi.osRelease.id` |
-| A new `[data]` template variable| Update the schema block above, the table below, **both** prompt scripts (`.chezmoiscripts/run_onchange_before_10-…` and `tools/chezmoi-init.sh`) |
+| A new `[data]` template variable| Update the schema block above, the table below and `tools/prompt-config.sh` |
 | A new package on Fedora         | `ansible/playbooks/vars/system/fedora.yml` (`add.packages`) or `vars/profile/fedora-personal.yml` for personal apps |
 | A setting for one machine only  | `ansible/playbooks/vars/machines/<hostname>.yml` (`add`/`remove`/`merge`/`override`) |
 | A new persona (work, vm, …)     | `ansible/playbooks/vars/profile/<system>-<profile>.yml` |
@@ -333,7 +342,7 @@ chezmoi apply --dry-run --verbose
   `chezmoi ignored` and `chezmoi managed` (target-path patterns) when in
   doubt if something should be ignored, ask! Only ignore if you are 100% sure
 - Don't modify `~/.config/chezmoi/chezmoi.toml` directly — it's
-  user-managed; change the prompt scripts instead.
+  user-managed; change `tools/prompt-config.sh` instead.
 - Don't remove the legacy `playbook` fallback (unset → OS+role auto-detect)
   without coordinating with existing users.
 - Don't add a script that auto-applies ansible without
