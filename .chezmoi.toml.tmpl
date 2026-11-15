@@ -1,0 +1,12 @@
+[edit]
+  command = {{ promptString "Editor command" "vim" | quote }}
+
+[git]
+  autoCommit = false
+  autoPush = false
+
+[data]
+  role = {{ promptChoice "Role" (list "personal" "work") "personal" | quote }}
+  email = {{ promptString "Email" | quote }}
+  name = {{ promptString "Name" | quote }}
+  playbook = {{ promptChoice "Ansible playbook" (list "default" "none") "default" | quote }}

@@ -20,9 +20,9 @@ in `.chezmoiignore` so it never reaches the user's machine.
 ## Runtime config (not in this repo)
 
 User-specific values live in `~/.config/chezmoi/chezmoi.toml` under
-`[data]`. They are **not** committed. The repo's prompt scripts
-(`run_onchange_before_10-prompt-user-info.sh.tmpl` and
-`tools/chezmoi-init.sh`) write this file on first run.
+`[data]`. They are **not** committed. `.chezmoi.toml.tmpl` renders that
+file: `chezmoi init` asks the questions, writes the config, and only
+then runs the apply, so the templates see the answers.
 
 Full schema:
 
@@ -59,8 +59,9 @@ The editor is asked at bootstrap and stored in `[edit].command`.
 `dot_gitconfig.tmpl` reuses it for `core.editor`, so the two can never
 drift apart.
 
-When you add a new template variable, update **both** prompt scripts
-and `tools/chezmoi-init.sh`.
+When you add a new template variable, add it to `.chezmoi.toml.tmpl`
+and to the table above. The config template owns the file: `chezmoi
+init` rewrites it, `chezmoi apply` leaves it alone.
 
 ## Repository layout
 
@@ -68,13 +69,13 @@ and `tools/chezmoi-init.sh`.
 .chezmoiscripts/             scripts run by chezmoi (auto-triggered)
   run_onchange_before_00     install missing prereqs (git, curl, jq, gum,
                              ansible-core)
-  run_onchange_before_10     prompt for user info, write config (no-op once
-                             chezmoi.toml exists)
   run_onchange_after_50      run the ansible playbook (selected via
                              chezmoi.toml `playbook`; legacy OS+role
                              fallback when unset)
   run_after_60               drop the bootstrap chezmoi (~/.local/bin or
                              ~/bin) once mise provides chezmoi
+.chezmoi.toml.tmpl          renders ~/.config/chezmoi/chezmoi.toml; asks
+                             the user for the values under [data]
 tools/                       one-off setup scripts (not auto-used)
   chezmoi-init.sh            bootstrap (prereqs + clone + apply)
   setup-btrfs-snapper/       snapper + btrfsmaintenance helpers
@@ -128,10 +129,10 @@ mise.toml                    repo-local mise tool pins (betterleaks, prek,
 The `installer` role is pure-data driven — add new knobs (packages,
 flatpaks, repos, pre-install commands, etc.) in the **variable
 layers** under `ansible/playbooks/vars/`. For new scenarios, create a
-new `ansible/playbooks/<os>-<role>.yml`; the prompt script
-auto-discovers it. See `ansible/roles/installer/README.md` for the
-full variable list grouped by phase, and
-`ansible/roles/installer/defaults/main.yml` for defaults.
+new `ansible/playbooks/<os>-<role>.yml` and add it to the playbook
+choices in `.chezmoi.toml.tmpl`. See
+`ansible/roles/installer/README.md` for the full variable list grouped
+by phase, and `ansible/roles/installer/defaults/main.yml` for defaults.
 
 ## Variable layers (system → profile → machine)
 
@@ -199,12 +200,12 @@ Precedence notes (verified on ansible-core 2.20):
 | ------------------------------- | -------------------------------------------------------------- |
 | A new dotfile                   | Drop it at repo root with `dot_` prefix (or under `dot_config/`) |
 | An OS- or role-aware dotfile    | Rename to `*.tmpl` and use `{{ .role }}` / `.chezmoi.osRelease.id` |
-| A new `[data]` template variable| Update the schema block above, the table below, **both** prompt scripts (`.chezmoiscripts/run_onchange_before_10-…` and `tools/chezmoi-init.sh`) |
+| A new `[data]` template variable| Update the schema block above, the table below and `.chezmoi.toml.tmpl` |
 | A new package on Fedora         | `ansible/playbooks/vars/system/fedora.yml` (`add.packages`) or `vars/profile/fedora-personal.yml` for personal apps |
 | A setting for one machine only  | `ansible/playbooks/vars/machines/<hostname>.yml` (`add`/`remove`/`merge`/`override`) |
 | A new persona (work, vm, …)     | `ansible/playbooks/vars/profile/<system>-<profile>.yml` |
 | Installer role defaults/flags   | `ansible/roles/installer/defaults/main.yml`                    |
-| A new provisioning path         | `ansible/playbooks/<name>.yml` (auto-discovers in prompt) |
+| A new provisioning path         | `ansible/playbooks/<name>.yml` (add it to the choices in `.chezmoi.toml.tmpl`) |
 | A new apply-time script         | `.chezmoiscripts/run_<when>_<NN>-<name>.sh.tmpl` (see [chezmoi run_onchange docs](https://www.chezmoi.io/docs/usage-guides/manage-machine-dotfiles/)) |
 | A repo-only file (don't deploy) | Add it to `.chezmoiignore` (see [chezmoiignore reference](https://www.chezmoi.io/docs/reference/chezmoiignore/)) |
 
@@ -332,8 +333,8 @@ chezmoi apply --dry-run --verbose
 - Don't forget to update `.chezmoiignore` after a change — check it with
   `chezmoi ignored` and `chezmoi managed` (target-path patterns) when in
   doubt if something should be ignored, ask! Only ignore if you are 100% sure
-- Don't modify `~/.config/chezmoi/chezmoi.toml` directly — it's
-  user-managed; change the prompt scripts instead.
+- Don't modify `~/.config/chezmoi/chezmoi.toml` directly — it is
+  rendered from `.chezmoi.toml.tmpl`; change the template instead.
 - Don't remove the legacy `playbook` fallback (unset → OS+role auto-detect)
   without coordinating with existing users.
 - Don't add a script that auto-applies ansible without

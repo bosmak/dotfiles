@@ -10,6 +10,12 @@
 
 set -euo pipefail
 
+CONFIG="$HOME/.config/chezmoi/chezmoi.toml"
+if [ ! -f "$CONFIG" ]; then
+    echo "ERROR: $CONFIG is missing — run 'chezmoi init --apply' to create it" >&2
+    exit 1
+fi
+
 if [[ ! -r /dev/tty ]] 2>/dev/null; then
     exit 0
 fi

@@ -66,6 +66,13 @@ fi
 # Machine identity is not passed in: the playbook reads the ansible_hostname
 # fact, so the machine layer follows the host it runs on.
 
+# The installer role needs the collections in requirements.yml; the galaxy
+# install is a no-op when they are already present.
+if [ -f "$ANSIBLE_DIR/requirements.yml" ]; then
+    ansible-galaxy collection install -r "$ANSIBLE_DIR/requirements.yml" \
+        || echo "WARN: could not install the ansible collections" >&2
+fi
+
 ANSIBLE_EXTRA_VARS=(-e "profile=$PROFILE")
 if [[ -n "$SYSTEM_ID" ]]; then
     ANSIBLE_EXTRA_VARS+=(-e "system_id=$SYSTEM_ID")

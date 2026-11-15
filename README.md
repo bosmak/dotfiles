@@ -6,7 +6,7 @@ provisioned by [ansible](https://www.ansible.com/).
 ## Bootstrap a new machine
 
 ```bash
-# make sure `git` and `curl` are available
+# make sure `git`, `curl` and `tar` are available
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply bosmak
 ```
 
@@ -26,9 +26,4 @@ chezmoi apply
 
 It can also run the ansible playbook, which changes the system.
 
-To re-prompt for the user info, delete the config and apply again:
-
-```bash
-rm ~/.config/chezmoi/chezmoi.toml
-chezmoi apply
-```
+To change the answers, run `chezmoi init --apply` again.

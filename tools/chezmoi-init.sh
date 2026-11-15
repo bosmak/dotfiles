@@ -68,9 +68,10 @@ case "$OS" in
 esac
 
 # 1. Install the prerequisites the checkout needs (prompts for sudo /
-#    Homebrew's password if needed)
+#    Homebrew's password if needed). tar is here because the chezmoi
+#    installer unpacks a tarball.
 NEED=()
-for cmd in git curl; do
+for cmd in git curl tar; do
     command -v "$cmd" >/dev/null 2>&1 || NEED+=("$cmd")
 done
 if [ ${#NEED[@]} -gt 0 ]; then
@@ -105,6 +106,7 @@ if [ ! -d "$SOURCE_DIR/.git" ]; then
     git clone "https://github.com/$REPO/dotfiles" "$SOURCE_DIR"
 fi
 
-# 4. Apply
+# 4. Apply. `chezmoi init` renders .chezmoi.toml.tmpl first, so the
+#    answers to the prompts are in place before the templates run.
 echo "==> Applying dotfiles"
-chezmoi apply --source "$SOURCE_DIR" --force
+chezmoi init --source "$SOURCE_DIR" --apply
