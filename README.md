@@ -10,7 +10,7 @@ provisioned by [ansible](https://www.ansible.com/).
 sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply bosmak
 ```
 
-On first run it prompts for:
+It prompts for:
 - Editor command (default: `vim`) — used by `chezmoi edit` and by git
 - Role (personal / work)
 - Email
@@ -25,5 +25,3 @@ chezmoi apply
 ```
 
 It can also run the ansible playbook, which changes the system.
-
-To change the answers, run `chezmoi init --apply` again.

@@ -1,24 +1,23 @@
 #!/usr/bin/env bash
 # tools/chezmoi-init.sh — bootstrap script for this dotfiles repo.
 #
-# Installs the few prerequisites the checkout needs, clones the repo and
-# applies it. The apply-time scripts in .chezmoiscripts/ install the
-# remaining prereqs, prompt for the user info and run the ansible
-# playbook.
+# Installs the prerequisites the checkout needs, clones the repo, prompts
+# for the user info, writes the config, then runs `chezmoi apply`.
 #
 # Supports Fedora (dnf) and macOS (brew). On macOS, Homebrew is
 # installed if missing.
 #
 # Usage:
 #   ./chezmoi-init.sh [GITHUB_USERNAME]
-#   curl -fsSL https://bsmk.xyz/dotfiles | bash
-#   curl -fsSL https://bsmk.xyz/dotfiles | bash -s -- GITHUB_USERNAME
+#   curl -fsSL https://raw.githubusercontent.com/bosmak/dotfiles/main/tools/chezmoi-init.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/bosmak/dotfiles/main/tools/chezmoi-init.sh | bash -s -- GITHUB_USERNAME
 
 set -euo pipefail
 
 REPO="${1:-${GITHUB_USERNAME:-bosmak}}"
 
 SOURCE_DIR="${DOTFILES_DIR:-$HOME/.local/share/chezmoi}"
+CONFIG="$HOME/.config/chezmoi/chezmoi.toml"
 
 # 0. Detect OS and pick a package manager. On macOS, install Homebrew
 #    if it's not already on PATH or at the default prefix locations.
@@ -68,10 +67,9 @@ case "$OS" in
 esac
 
 # 1. Install the prerequisites the checkout needs (prompts for sudo /
-#    Homebrew's password if needed). tar is here because the chezmoi
-#    installer unpacks a tarball.
+#    Homebrew's password if needed)
 NEED=()
-for cmd in git curl tar; do
+for cmd in git curl tar gum; do
     command -v "$cmd" >/dev/null 2>&1 || NEED+=("$cmd")
 done
 if [ ${#NEED[@]} -gt 0 ]; then
@@ -89,9 +87,8 @@ if [ ${#NEED[@]} -gt 0 ]; then
     "${PKG_INSTALL[@]}" "${NEED[@]}"
 fi
 
-# 2. Install chezmoi if missing. This is only a bootstrap: mise owns the
-#    chezmoi version (dot_config/mise/config.toml), and
-#    run_after_60-chezmoi-handover.sh drops this binary once mise has one.
+# 2. Install chezmoi if missing. This copy is temporary:
+#    run_after_60-chezmoi-handover.sh drops it once mise provides one.
 if ! command -v chezmoi >/dev/null 2>&1; then
     echo "==> Installing chezmoi (bootstrap copy)"
     mkdir -p "$HOME/.local/bin"
@@ -106,10 +103,7 @@ if [ ! -d "$SOURCE_DIR/.git" ]; then
     git clone "https://github.com/$REPO/dotfiles" "$SOURCE_DIR"
 fi
 
-# 4. Prompt for user info (writes ~/.config/chezmoi/chezmoi.toml). The
-#    config has to exist before chezmoi starts: it is read once at
-#    startup, so a value written later would not reach the templates.
-CONFIG="$HOME/.config/chezmoi/chezmoi.toml"
+# 4. Prompt for user info (writes ~/.config/chezmoi/chezmoi.toml)
 if [ ! -f "$CONFIG" ]; then
     if [[ ! -r /dev/tty ]] 2>/dev/null; then
         echo "ERROR: no TTY; cannot prompt. Create $CONFIG manually with:" >&2
@@ -119,7 +113,7 @@ if [ ! -f "$CONFIG" ]; then
         echo '  role = "personal"' >&2
         echo '  email = "you@example.com"' >&2
         echo '  name = "Your Name"' >&2
-        echo '  playbook = "default"   # or "none"' >&2
+        echo '  playbook = "default"   # or "none", or a basename from ansible/playbooks/' >&2
         exit 1
     fi
     echo
@@ -128,11 +122,11 @@ if [ ! -f "$CONFIG" ]; then
     if command -v gum >/dev/null 2>&1; then
         editor=$(gum input --header "Default editor" --value "vim")
         role=$(gum choose --header "What role is this machine?" personal work)
-        email=$(gum input --header "Email")
-        name=$(gum input --header "Name")
-        # Discover the available playbooks and let the user pick one or
-        # "none". The name carries no system or profile: those are
-        # resolved at run time from the OS and the role.
+        email=$(gum input --placeholder "Email")
+        name=$(gum input --placeholder "Name")
+        # Discover available ansible playbooks (basenames without .yml) and let
+        # the user pick one or "none". The playbook name carries no system or
+        # profile: those are resolved at run time from the OS and the role.
         PLAYBOOK_DIR="$SOURCE_DIR/ansible/playbooks"
         if [[ -d "$PLAYBOOK_DIR" ]]; then
             mapfile -t PLAYBOOKS < <(find "$PLAYBOOK_DIR" -maxdepth 1 -type f -name '*.yml' -printf '%f\0' | sort -z | xargs -0 -n1 basename -s .yml)
@@ -142,7 +136,7 @@ if [ ! -f "$CONFIG" ]; then
             playbook="none"
         fi
     else
-        echo "Default editor"
+        echo "Which editor should chezmoi and git use?"
         read -r -p "Editor command [vim]: " editor < /dev/tty
         editor="${editor:-vim}"
         echo
@@ -158,42 +152,42 @@ if [ ! -f "$CONFIG" ]; then
                 *) echo "Please enter 1 or 2." ;;
             esac
         done
-        echo "Email"
         read -r -p "Email: " email < /dev/tty
-        echo "Name"
         read -r -p "Name: " name < /dev/tty
 
         echo
         echo "==> Which ansible playbook should run on apply?"
         PLAYBOOK_DIR="$SOURCE_DIR/ansible/playbooks"
-        playbook="default"
+        playbook=""
         if [[ -d "$PLAYBOOK_DIR" ]]; then
             mapfile -t PLAYBOOKS < <(find "$PLAYBOOK_DIR" -maxdepth 1 -type f -name '*.yml' -printf '%f\0' | sort -z | xargs -0 -n1 basename -s .yml)
-            PLAYBOOKS+=("none")
             i=1
             for pb in "${PLAYBOOKS[@]}"; do
                 echo "  $i) $pb"
                 i=$((i+1))
             done
-            default_index=$i
-            echo "  $default_index) none (skip ansible)"
+            none_index=$i
+            echo "  $none_index) none (skip ansible)"
+            echo "    (press enter to keep current / auto-detect)"
             while true; do
-                read -r -p "Choice [1-$default_index]: " choice < /dev/tty
+                read -r -p "Choice [0-$none_index]: " choice < /dev/tty
                 case "$choice" in
-                    "" ) playbook="${PLAYBOOKS[0]}"; break ;;
-                    * )
-                        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= default_index )); then
-                            if (( choice == default_index )); then
+                    "" ) playbook=""; break ;;
+                    0|none) playbook="none"; break ;;
+                    *)
+                        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= none_index )); then
+                            if (( choice == none_index )); then
                                 playbook="none"
                             else
                                 playbook="${PLAYBOOKS[$((choice-1))]}"
                             fi
                             break
                         fi
-                        echo "Please enter a number between 1 and $default_index." ;;
+                        echo "Please enter a number between 0 and $none_index, or press enter to skip." ;;
                 esac
             done
         else
+            echo "  (no ansible/playbooks/ found; defaulting to none)"
             playbook="none"
         fi
     fi
@@ -209,12 +203,19 @@ if [ ! -f "$CONFIG" ]; then
   role        = "$role"
   email       = "$email"
   name        = "$name"
-  playbook    = "$playbook"
 EOF
+
+    # Persist playbook choice (or "none"). Empty means auto-detect.
+    if [[ -n "${playbook:-}" ]]; then
+        if grep -q '^playbook *=' "$CONFIG"; then
+            sed -i "s|^playbook *=.*|playbook = \"$playbook\"|" "$CONFIG"
+        else
+            printf '\nplaybook = "%s"\n' "$playbook" >> "$CONFIG"
+        fi
+    fi
     echo "Wrote $CONFIG"
 fi
 
-# 5. Apply. `chezmoi init` renders .chezmoi.toml.tmpl first, so the
-#    answers are in place before the templates run.
+# 5. Apply
 echo "==> Applying dotfiles"
-chezmoi init --source "$SOURCE_DIR" --apply
+chezmoi apply --source "$SOURCE_DIR" --force

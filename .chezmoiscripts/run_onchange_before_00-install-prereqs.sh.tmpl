@@ -1,20 +1,12 @@
 #!/usr/bin/env bash
-# Installs the prereqs the apply needs: git and curl for the checkout,
-# jq for the niri scripts, gum for the prompts, ansible-core for the
-# playbook. Runs before every apply; the packages are installed one at a
-# time so an unavailable one does not abort the rest.
+# Installs the prereqs the apply needs, one package at a time so an
+# unavailable one does not abort the rest.
 #
-# mise is deliberately not in this list: it ships from the jdxcode COPR,
-# which the ansible playbook enables, so the playbook owns it.
+# mise is deliberately absent: it ships from the jdxcode COPR, which the
+# ansible playbook enables, so the playbook owns it.
 # Prereqs hash: {{ output "bash" "-c" "printf '%s\n' git curl jq gum ansible-core | sha256sum | cut -d' ' -f1" | trim }}
 
 set -euo pipefail
-
-CONFIG="$HOME/.config/chezmoi/chezmoi.toml"
-if [ ! -f "$CONFIG" ]; then
-    echo "ERROR: $CONFIG is missing — run 'chezmoi init --apply' to create it" >&2
-    exit 1
-fi
 
 if [[ ! -r /dev/tty ]] 2>/dev/null; then
     exit 0
