@@ -4,6 +4,7 @@ add:
     - jdxcode/mise
     - atim/starship
     - bosmak/copr
+    - imput/helium
   pre_packages_url:
     - https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
     - https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
@@ -73,6 +74,7 @@ add:
     - i2c-tools
     - podman
     - podman-compose
+    - helium-bin
   packages_replace:
     - old: ffmpeg-free
       new: ffmpeg
@@ -115,7 +117,7 @@ add:
     - command: mise install --yes
       chdir: "{{ ansible_env.HOME }}"
     - command: >
-        for id in calculator wallhavenCarousel niriWorkspaceBar caffeineRedesigned;
+        for id in {{ post_install_vars.dms_plugins | join(' ') }};
         do dms plugins install "$id";
         rc=$?;
         [ $rc -eq 0 ] || [ $rc -eq 1 ] || echo "id=$id failed (rc=$rc)";
@@ -124,6 +126,8 @@ add:
     - command: |
         #!/usr/bin/env bash
         set -eu
+        changed=0
+
         dir="$HOME/.local/state/dms"
         session="$dir/session.json"
         mkdir -p "$dir" 2>/dev/null || exit 0
@@ -131,18 +135,43 @@ add:
         [ -s "$session" ] || echo '{}' > "$session"
         hidden='{{ post_install_vars.dms_hidden_apps | default([]) | to_json }}'
         overrides='{{ post_install_vars.dms_app_overrides | default({}) | to_json }}'
-        filter='(if ($hidden | length) > 0 then .hiddenApps = $hidden else . end) | (if ($overrides | length) > 0 then .appOverrides = ((.appOverrides // {}) * $overrides) else . end)'
+        filter='(if ($hidden | length) > 0 then .hiddenApps = $hidden else . end) | (if ($overrides | length) > 0 then .appOverrides = ((.appOverrides // {}) * $overrides) else . end) | .showThirdPartyPlugins = true'
         current=$(jq -c . "$session")
         merged=$(jq -c --argjson hidden "$hidden" --argjson overrides "$overrides" "$filter" "$session")
         if [ "$merged" != "$current" ]; then
           tmp="$session.ansible.$$"
           jq --argjson hidden "$hidden" --argjson overrides "$overrides" "$filter" "$session" > "$tmp"
           mv "$tmp" "$session"
+          changed=1
+        fi
+
+        plugin_dir="$HOME/.config/dms"
+        plugin_settings="$plugin_dir/plugin_settings.json"
+        mkdir -p "$plugin_dir" 2>/dev/null || exit 0
+        [ -w "$plugin_dir" ] || exit 0
+        [ -s "$plugin_settings" ] || echo '{}' > "$plugin_settings"
+        plugins='{{ post_install_vars.dms_plugins | to_json }}'
+        plugin_filter='reduce $plugins[] as $id (.; .[$id] = ((.[$id] // {}) + {enabled: true}))'
+        current=$(jq -c . "$plugin_settings")
+        merged=$(jq -c --argjson plugins "$plugins" "$plugin_filter" "$plugin_settings")
+        if [ "$merged" != "$current" ]; then
+          tmp="$plugin_settings.ansible.$$"
+          jq --argjson plugins "$plugins" "$plugin_filter" "$plugin_settings" > "$tmp"
+          mv "$tmp" "$plugin_settings"
+          changed=1
+        fi
+
+        if [ "$changed" -eq 1 ]; then
           systemctl --user restart dms
         fi
       chdir: "{{ ansible_env.HOME }}"
 merge:
   post_install_vars:
+    dms_plugins:
+      - calculator
+      - wallhavenCarousel
+      - niriWorkspaceBar
+      - caffeineRedesigned
     dms_hidden_apps:
       - fcitx5-configtool
       - qt5ct
