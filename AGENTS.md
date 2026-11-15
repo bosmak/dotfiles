@@ -321,6 +321,11 @@ chezmoi apply --dry-run --verbose
   (`dot_config/niri/**` never matches). After every change that adds,
   removes, or renames source files, re-check `.chezmoiignore`: new
   source paths must either be deployed on purpose or added to it.
+  To gate a file by OS, put a template line in `.chezmoiignore`:
+
+  ```
+  .config/dots/your-snippet.zsh {{ if ne .chezmoi.os "linux" }}
+  ```
 
 ## Don't
 

@@ -6,33 +6,29 @@ package manager and orders the work correctly.
 
 ## Execution flow
 
-The single source of truth is `tasks/main.yml`. It is just an
-orchestrator; each step delegates to its own file.
+`tasks/main.yml` is just an orchestrator; each step delegates to its own
+file. The order is what matters:
 
-```
-Linux                          macOS
-──────                         ──────
-pre_dnf                        pre_brew
-  pre_packages_url               extra_repos (tap)
-  extra_repos                    pre_packages
-  pre_packages
-  locked_packages
-pre_install_commands           pre_install_commands
-dnf                            brew
-  packages_url                   packages
-  packages                       packages_replace
-  packages_replace
-flatpak                        (skipped)
-github                         github
-keyboard                       (skipped)
-groups                         groups
-post_install_commands          post_install_commands
-```
+| File | Runs | What it does |
+| --- | --- | --- |
+| `pre_dnf.yml` | Linux, first | bootstrap packages (rpmfusion + versionlock plugin), enable COPRs |
+| `pre_brew.yml` | macOS, first | tap + bootstrap packages |
+| `pre_install_commands` | both | arbitrary shell, e.g. drop a vendor `.repo` file |
+| `dnf.yml` | Linux | main package install |
+| `brew.yml` | macOS | main package install |
+| `flatpak.yml` | Linux | flatpak repos + apps |
+| `github.yml` | both | clone repos + install release binaries |
+| `keyboard.yml` | Linux | xkb layout + options via dconf |
+| `groups.yml` | both | add the running user to supplementary groups |
+| `post_install_commands` | both | arbitrary shell |
 
-The split between `pre_dnf` and `dnf` (and the parallel
-`pre_brew` / `brew`) is the interesting one — it lets
-`pre_install_commands` sit in the middle, so workflows like "set up a
-third-party repo → install from it" work on either platform:
+Every knob this role consumes is listed in `defaults/main.yml` and
+defaults to `[]`.
+
+The split between `pre_dnf` and `dnf` (and the parallel `pre_brew` /
+`brew`) is the interesting one — it lets `pre_install_commands` sit in
+the middle, so workflows like "set up a third-party repo → install from
+it" work on either platform:
 
 ```
 pre_dnf         install rpmfusion + versionlock plugin, enable COPRs
@@ -45,22 +41,6 @@ dnf             install the actual packages — they can now see the
 
 Both phases use the same engine (`dnf` or `brew`) but different variable
 names so you control ordering precisely.
-
-## File layout
-
-```
-defaults/main.yml    every knob this role consumes (all default to [])
-tasks/
-  main.yml          orchestrator — imports the others
-  pre_dnf.yml       Linux: bootstrap packages (runs first)
-  dnf.yml           Linux: main package install
-  pre_brew.yml      macOS: tap + bootstrap packages
-  brew.yml          macOS: main package install
-  flatpak.yml       Linux: flatpak repos + apps
-  github.yml        clone repos + install release binaries
-  keyboard.yml      xkb layout + options via dconf
-  groups.yml        add the running user to supplementary groups
-```
 
 ## Variables
 
