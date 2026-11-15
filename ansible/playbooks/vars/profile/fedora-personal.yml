@@ -4,9 +4,9 @@ add:
     - jdxcode/mise
     - atim/starship
     - bosmak/copr
-  pre_packages:
-    - rpmfusion-free-release
-    - rpmfusion-nonfree-release
+  pre_packages_url:
+    - https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
+    - https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_facts.distribution_major_version }}.noarch.rpm
   pre_install_commands:
     - command: "curl -fsSL https://yum.enpass.io/enpass-yum.repo -o /etc/yum.repos.d/enpass-yum.repo"
       creates: /etc/yum.repos.d/enpass-yum.repo

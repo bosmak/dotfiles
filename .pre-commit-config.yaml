@@ -11,6 +11,8 @@ repos:
           - --ignore-expression=.role
           # The docs show the editor as a literal example value.
           - --ignore-expression=.chezmoi.config.edit.command
+          # The RPM Fusion mirror path contains "fedora" as a literal.
+          - --ignore-expression=.chezmoi.osRelease.id
 
   - repo: https://github.com/betterleaks/betterleaks
     rev: v1.7.1
