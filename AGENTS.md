@@ -61,7 +61,8 @@ drift apart.
 
 When you add a new template variable, add it to `.chezmoi.toml.tmpl`
 and to the table above. The config template owns the file: `chezmoi
-init` rewrites it, `chezmoi apply` leaves it alone.
+init` rewrites it, `chezmoi apply` leaves it alone. A value already in
+the config is kept, so `chezmoi init` only asks for what is missing.
 
 ## Repository layout
 
@@ -75,7 +76,7 @@ init` rewrites it, `chezmoi apply` leaves it alone.
   run_after_60               drop the bootstrap chezmoi (~/.local/bin or
                              ~/bin) once mise provides chezmoi
 .chezmoi.toml.tmpl          renders ~/.config/chezmoi/chezmoi.toml; asks
-                             the user for the values under [data]
+                             for the values the config does not have yet
 tools/                       one-off setup scripts (not auto-used)
   chezmoi-init.sh            bootstrap (prereqs + clone + apply)
   setup-btrfs-snapper/       snapper + btrfsmaintenance helpers
