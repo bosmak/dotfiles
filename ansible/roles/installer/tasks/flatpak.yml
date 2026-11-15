@@ -8,6 +8,7 @@
   when:
     - ansible_system == 'Linux'
     - flatpak_repos | length > 0
+  become: true
 
 - name: Install flatpak apps
   community.general.flatpak:
@@ -19,3 +20,4 @@
   when:
     - ansible_system == 'Linux'
     - flatpak | length > 0
+  become: true
