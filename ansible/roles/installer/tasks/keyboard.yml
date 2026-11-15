@@ -14,11 +14,11 @@
     if [ {{ keyboard.options | default([]) | length }} -eq 0 ]; then
       new='@as []'
     else
-      new="[{{ keyboard.options | join(', ') }}]"
+      new="[{{ keyboard.options | default([]) | join(', ') }}]"
     fi
     current=$(dconf read /org/gnome/desktop/input-sources/xkb-options 2>/dev/null || echo '')
     [ "$current" = "$new" ] || dconf write /org/gnome/desktop/input-sources/xkb-options "$new"
-  when: keyboard is defined
+  when: keyboard | length > 0
   become: true
   become_user: "{{ ansible_user_id }}"
   changed_when: false

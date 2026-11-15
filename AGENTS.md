@@ -78,7 +78,7 @@ and to the table above.
   run_onchange_after_50      run the ansible playbook (selected via
                              chezmoi.toml `playbook`; legacy OS+role
                              fallback when unset)
-  run_after_60               drop the bootstrap chezmoi (~/.local/bin or
+  run_onchange_after_60      drop the bootstrap chezmoi (~/.local/bin or
                              ~/bin) once mise provides chezmoi
 .chezmoi.toml.tmpl          renders ~/.config/chezmoi/chezmoi.toml from
                              tools/prompt-config.sh
@@ -245,8 +245,13 @@ existing one and choose a `bash -c` body that changes whenever the
 script's triggers change.
 
 A script that must run on **every** apply uses `run_after_<NN>-<name>.sh`
-with no hash comment — for example `run_after_60-chezmoi-handover.sh`,
-which drops the bootstrap chezmoi once mise provides one.
+with no hash comment. Such a script shows up in `chezmoi diff` on every
+apply, because chezmoi diffs the scripts it is about to run — that is the
+diff telling you the script runs, not a file it wants to create. Prefer an
+`onchange` script with a hash that covers the state the script acts on:
+`run_onchange_after_60-chezmoi-handover.sh.tmpl` hashes the bootstrap copy
+and the chezmoi that mise can provide, so it only runs when one of them
+changes.
 
 ## Package ownership
 

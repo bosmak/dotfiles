@@ -2,6 +2,12 @@
 # Drops the bootstrap chezmoi once mise provides one: the dotfiles declare
 # chezmoi in the global mise config, and a leftover copy in ~/.local/bin or
 # ~/bin would shadow it on PATH.
+#
+# The hash below is recomputed at every apply; when it differs from the
+# previously rendered content, chezmoi re-executes this script. It covers the
+# two things the script acts on: the bootstrap copy that is still there and
+# the chezmoi that mise can provide.
+# Handover hash: {{ output "bash" "-c" (printf "b=no; for c in %q/.local/bin/chezmoi %q/bin/chezmoi; do [ -e $c ] && { b=yes; break; }; done; m=no; command -v mise >/dev/null 2>&1 && mise -C %q which chezmoi >/dev/null 2>&1 && m=yes; echo \"bootstrap=$b mise-chezmoi=$m\"" .chezmoi.homeDir .chezmoi.homeDir .chezmoi.homeDir) | trim }}
 
 set -euo pipefail
 
@@ -34,7 +40,7 @@ if ! mise -C "$HOME" which chezmoi >/dev/null 2>&1; then
     fi
 fi
 
-MISE_CHEZMOI="$(mise -C "$HOME" which chezmoi)"
+MISE_CHEZMOI="$(mise -C "$HOME" which chezmoi || true)"
 if [[ ! -x "$MISE_CHEZMOI" ]]; then
     echo "==> the mise chezmoi is not executable; keeping $BOOTSTRAP" >&2
     exit 0
