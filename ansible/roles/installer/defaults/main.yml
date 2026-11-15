@@ -13,6 +13,7 @@ github_repositories: []
 github_release_binaries: []
 keyboard: {}
 user_groups: []
+default_shell: ""
 post_install_commands: []
 
 dnf_lock_timeout: 120

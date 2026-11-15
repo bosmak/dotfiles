@@ -1,0 +1,31 @@
+---
+- name: Look up the default shell
+  ansible.builtin.stat:
+    path: "{{ default_shell }}"
+  register: default_shell_stat
+  when: default_shell | length > 0
+
+- name: Allow the default shell in /etc/shells
+  ansible.builtin.lineinfile:
+    path: /etc/shells
+    line: "{{ default_shell }}"
+    insertafter: EOF
+    state: present
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - default_shell | length > 0
+    - default_shell_stat.stat.exists | default(false)
+  become: true
+
+- name: Set the user's login shell
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    shell: "{{ default_shell }}"
+  when:
+    - default_shell | length > 0
+    - default_shell_stat.stat.exists | default(false)
+    - ansible_user_id != 'root'
+  become: true

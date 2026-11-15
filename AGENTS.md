@@ -114,6 +114,7 @@ ansible/                     system provisioning (OS-aware)
       brew.yml               macOS: main package install
       flatpak.yml            Linux: flatpak repos + apps
       github.yml             clone repos + install release binaries
+      shell.yml              set the user's default login shell
       keyboard.yml           xkb layout/options via dconf
       groups.yml             add the running user to supplementary groups
 dot_zshrc.tmpl               OS+role aware (sources work.zsh or personal.zsh)

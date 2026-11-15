@@ -151,6 +151,7 @@ merge:
       enpass:
         envVars: XDG_CURRENT_DESKTOP=GNOME
 override:
+  default_shell: /usr/bin/zsh
   keyboard:
     layout: us
     model: pc105

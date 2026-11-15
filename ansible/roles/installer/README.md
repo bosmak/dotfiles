@@ -18,6 +18,7 @@ file. The order is what matters:
 | `brew.yml` | macOS | main package install |
 | `flatpak.yml` | Linux | flatpak repos + apps |
 | `github.yml` | both | clone repos + install release binaries |
+| `shell.yml` | both | set the user's default login shell |
 | `keyboard.yml` | Linux | xkb layout + options via dconf |
 | `groups.yml` | both | add the running user to supplementary groups |
 | `post_install_commands` | both | arbitrary shell |
@@ -116,6 +117,11 @@ Writes the xkb layout + options via `dconf`. Linux-only.
 | Variable | Purpose |
 | --- | --- |
 | `user_groups` | Supplementary group names to add the running user to (e.g. `docker`, `libvirt`, `plugdev`). Uses `append: true` so existing membership is preserved. Groups that don't yet exist on the system are created first, so order vs. package install doesn't matter. Runs after `keyboard` and before `post_install_commands`. |
+
+### `default_shell`
+| Variable | Purpose |
+| --- | --- |
+| `default_shell` | Absolute path of the shell the user should log in with (e.g. `/usr/bin/zsh`). Empty (the default) means "leave the login shell alone". The shell is added to `/etc/shells` when it is not listed there — `chsh` refuses shells that are missing from that file. Skipped when the shell binary is not installed, and when the play runs as root. The change applies to new sessions only: an already open terminal keeps the shell it started with. |
 
 ## Usage
 

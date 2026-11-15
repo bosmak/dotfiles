@@ -35,6 +35,9 @@
 - name: Run GitHub tasks
   ansible.builtin.import_tasks: github.yml
 
+- name: Set the default login shell
+  ansible.builtin.import_tasks: shell.yml
+
 - name: Run keyboard tasks
   ansible.builtin.import_tasks: keyboard.yml
   when: ansible_system == 'Linux'
