@@ -1,0 +1,7 @@
+---
+add:
+  packages:
+    - iwlwifi-mvm-firmware
+    - iwlbluetooth-firmware
+    - alsa-sof-firmware
+    - alsa-ucm

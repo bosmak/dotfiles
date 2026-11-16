@@ -15,6 +15,7 @@ add:
   packages:
     - firefox
     - zsh
+    - fzf
     - ripgrep
     - mise
     - starship
