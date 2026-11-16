@@ -81,8 +81,9 @@ Two mechanisms deal with it:
 | `dnf_retry_errors` | `[lock, already in progress]` | Error fragments that mean "dnf is busy". |
 
 ### `pre_install_commands` / `post_install_commands`
-Arbitrary shell, run with `become: true` if requested. Use
-`creates:` to make them idempotent.
+Arbitrary shell. The pre-install commands run as root, the
+post-install commands as the account that invoked the apply, so they
+act on that account's home. Use `creates:` to make them idempotent.
 
 ### `dnf` main phase
 | Variable | Purpose |

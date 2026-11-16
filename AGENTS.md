@@ -234,9 +234,9 @@ runs.** This means:
 - Editing the hash command itself triggers a one-shot re-run (often
   what you want).
 - Editing any tracked file under `ansible/` triggers
-  `run_onchange_after_50-ansible.sh` (which runs the playbook with
-  `--ask-become-pass`). **Be careful — ansible applies can modify the
-  user's system.**
+  `run_onchange_after_50-ansible.sh` (which runs the playbook; sudo
+  authenticates through PAM on the terminal). **Be careful — ansible
+  applies can modify the user's system.**
 - Editing the prereqs list in `run_onchange_before_00-install-prereqs.sh.tmpl`
   triggers a re-install on the next apply.
 
@@ -286,6 +286,50 @@ follows `[data].role`.
 
 Backward compatibility is intentional: do not remove the legacy
 fallback without a major version bump.
+
+## Privilege escalation
+
+The apply runs the playbook under a single `sudo`:
+
+```
+sudo ansible-playbook -e "login_user=$USER" ...
+```
+
+One authentication for the whole run — the fingerprint answers the
+prompt on the terminal, and the password is the fallback when the scan
+does not match (`pam_fprintd` is `sufficient` in `system-auth`, so a
+failed or cancelled scan falls through to `pam_unix`).
+
+**Nothing is cached.** The playbook runs as root, so its `become:
+true` tasks are already root and need no authentication, and the tasks
+that belong to the account drop to it with `become_user: "{{
+login_user }}"`. sudo keeps its default per-terminal credential record,
+so a credential never outlives the terminal that created it — and
+closing that terminal takes it away, which a shared record would not.
+
+The playbook must therefore say which account it acts for: the facts
+are root's, so the play defines `login_user` (the account that
+invoked the apply) and `login_home`, and the tasks that belong to that
+account use them. `login_user` comes from the run script as an extra
+variable, and falls back to `SUDO_USER` or `ansible_user_id`.
+
+The apply script does not pass `--ask-become-pass`: a piped password
+makes the local connection wait for a prompt that the fingerprint never
+prints, and the task dies with `Timed out waiting for become success`.
+
+The apply needs a terminal: without one the prompt cannot be shown and
+the password fallback has nothing to read, so the script skips the
+playbook instead of failing every task.
+
+Nothing in the stack has a cumulative timeout — `task_timeout` is 0
+(disabled), and the dnf retries and the repo-lock wait are bounded per
+task — so a run that lasts an hour behaves like one that lasts a
+minute.
+
+A failed authentication fails the play and then the apply: the run
+script exits non-zero, chezmoi aborts and does not record the script
+state, so the next `chezmoi apply` runs the playbook again and resumes
+where it stopped — dnf and flatpak are idempotent.
 
 ## Validation
 
@@ -351,9 +395,11 @@ chezmoi apply --dry-run --verbose
   user-managed; change `tools/prompt-config.sh` instead.
 - Don't remove the legacy `playbook` fallback (unset → OS+role auto-detect)
   without coordinating with existing users.
-- Don't add a script that auto-applies ansible without
-  `--ask-become-pass` (or equivalent sudo handling) — the user's
-  machine state matters.
+- Don't add a script that auto-applies ansible without a way to
+  authenticate — the user's machine state matters. The playbook
+  authenticates through sudo on the terminal, so `--ask-become-pass`
+  must stay off: it makes ansible pipe a password into sudo, which
+  breaks the fingerprint prompt.
 - Don't commit secrets. The repo is a public dotfiles mirror.
 
 ## References

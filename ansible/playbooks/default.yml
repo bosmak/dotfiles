@@ -5,6 +5,16 @@
   gather_facts: true
 
   vars:
+    # The apply runs the playbook as root, so the tasks that belong to
+    # the account that invoked it need to name it: the facts are root's.
+    login_user: "{{ lookup('env', 'SUDO_USER') | default(ansible_user_id, true) }}"
+    login_home: "{{ lookup('pipe', 'getent passwd ' ~ login_user ~ ' | cut -d: -f6') }}"
+    login_uid: "{{ lookup('pipe', 'id -u ' ~ login_user) }}"
+    # sudo resets the environment, so the tasks that drop to the account
+    # lose its session bus — dconf and systemctl --user need it back.
+    login_environment:
+      XDG_RUNTIME_DIR: "/run/user/{{ login_uid }}"
+      DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ login_uid }}/bus"
     layer_system: "{{ system_id | default(ansible_distribution | lower, true) }}"
     layer_profile: "{{ profile | default('personal', true) }}"
     machine_id: "{{ ansible_hostname }}"

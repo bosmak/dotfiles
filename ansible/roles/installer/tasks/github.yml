@@ -8,13 +8,19 @@
   loop: "{{ github_repositories }}"
   when: github_repositories | length > 0
   changed_when: false
+  become: true
+  become_user: "{{ login_user }}"
+  environment: "{{ login_environment }}"
 
 - name: Install GitHub release binaries
   when: github_release_binaries | length > 0
+  become: true
+  become_user: "{{ login_user }}"
+  environment: "{{ login_environment }}"
   block:
     - name: Stat installed binary
       ansible.builtin.stat:
-        path: "{{ ansible_env.HOME }}/.local/bin/{{ item.link_name }}"
+        path: "{{ login_home }}/.local/bin/{{ item.link_name }}"
         checksum_algorithm: sha256
       register: __binary_stat
       loop: "{{ github_release_binaries }}"
@@ -70,7 +76,7 @@
 
     - name: Create install directory
       ansible.builtin.file:
-        path: "{{ ansible_env.HOME }}/.local/bin"
+        path: "{{ login_home }}/.local/bin"
         state: directory
         mode: '0755'
       when: github_release_binaries | length > 0
@@ -78,7 +84,7 @@
     - name: Install binary
       ansible.builtin.copy:
         src: "/tmp/{{ item.name }}-{{ item.version }}/{{ item.binary_path }}"
-        dest: "{{ ansible_env.HOME }}/.local/bin/{{ item.link_name }}"
+        dest: "{{ login_home }}/.local/bin/{{ item.link_name }}"
         mode: '0755'
         remote_src: true
       loop: "{{ github_release_binaries }}"

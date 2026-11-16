@@ -22,10 +22,10 @@
 
 - name: Set the user's login shell
   ansible.builtin.user:
-    name: "{{ ansible_user_id }}"
+    name: "{{ login_user }}"
     shell: "{{ default_shell }}"
   when:
     - default_shell | length > 0
     - default_shell_stat.stat.exists | default(false)
-    - ansible_user_id != 'root'
+    - login_user != 'root'
   become: true

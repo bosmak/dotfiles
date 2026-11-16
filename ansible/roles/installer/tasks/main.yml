@@ -52,5 +52,7 @@
     creates: "{{ item.creates | default(omit) }}"
   loop: "{{ post_install_commands }}"
   when: post_install_commands | length > 0
-  become: "{{ item.become | default(false) }}"
+  become: true
+  become_user: "{{ login_user }}"
+  environment: "{{ login_environment }}"
   changed_when: false

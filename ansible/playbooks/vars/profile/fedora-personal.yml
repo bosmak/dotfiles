@@ -104,7 +104,7 @@ add:
   github_repositories:
     - name: zap
       repository: zap-zsh/zap
-      dest: "{{ ansible_env.HOME }}/.local/share/zap"
+      dest: "{{ login_home }}/.local/share/zap"
       depth: 1
       update: false
   user_groups:
@@ -113,16 +113,16 @@ add:
     - pvpn
   post_install_commands:
     - command: mise trust
-      chdir: "{{ ansible_env.HOME }}"
+      chdir: "{{ login_home }}"
     - command: mise install --yes
-      chdir: "{{ ansible_env.HOME }}"
+      chdir: "{{ login_home }}"
     - command: >
         for id in {{ post_install_vars.dms_plugins | join(' ') }};
         do dms plugins install "$id";
         rc=$?;
         [ $rc -eq 0 ] || [ $rc -eq 1 ] || echo "id=$id failed (rc=$rc)";
         done
-      chdir: "{{ ansible_env.HOME }}"
+      chdir: "{{ login_home }}"
     - command: |
         #!/usr/bin/env bash
         set -eu
@@ -164,7 +164,7 @@ add:
         if [ "$changed" -eq 1 ]; then
           systemctl --user restart dms
         fi
-      chdir: "{{ ansible_env.HOME }}"
+      chdir: "{{ login_home }}"
 merge:
   post_install_vars:
     dms_plugins:

@@ -6,7 +6,8 @@
     [ "$current" = "$new" ] || dconf write /org/gnome/desktop/input-sources/sources "$new"
   when: keyboard.layout is defined
   become: true
-  become_user: "{{ ansible_user_id }}"
+  become_user: "{{ login_user }}"
+  environment: "{{ login_environment }}"
   changed_when: false
 
 - name: Set keyboard options
@@ -20,5 +21,6 @@
     [ "$current" = "$new" ] || dconf write /org/gnome/desktop/input-sources/xkb-options "$new"
   when: keyboard | length > 0
   become: true
-  become_user: "{{ ansible_user_id }}"
+  become_user: "{{ login_user }}"
+  environment: "{{ login_environment }}"
   changed_when: false

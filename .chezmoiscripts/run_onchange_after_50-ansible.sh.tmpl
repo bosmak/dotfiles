@@ -57,19 +57,17 @@ if [[ -z "$PLAYBOOK" ]]; then
     exit 0
 fi
 
-# --ask-become-pass prompts for the sudo password on a TTY.
-ANSIBLE_BECOME_FLAGS=""
-if [[ -r /dev/tty ]] 2>/dev/null; then
-    ANSIBLE_BECOME_FLAGS="--ask-become-pass"
-fi
+# No --ask-become-pass: sudo authenticates through PAM on the terminal, so
+# the fingerprint reader answers the prompt.
 
 # Machine identity is not passed in: the playbook reads the ansible_hostname
 # fact, so the machine layer follows the host it runs on.
 
 # The installer role needs the collections in requirements.yml; the galaxy
-# install is a no-op when they are already present.
+# install is a no-op when they are already present. It runs as root,
+# because the playbook does.
 if [ -f "$ANSIBLE_DIR/requirements.yml" ]; then
-    ansible-galaxy collection install -r "$ANSIBLE_DIR/requirements.yml" \
+    sudo ansible-galaxy collection install -r "$ANSIBLE_DIR/requirements.yml" \
         || echo "WARN: could not install the ansible collections" >&2
 fi
 
@@ -79,6 +77,21 @@ if [[ -n "$SYSTEM_ID" ]]; then
 fi
 
 echo "==> Running ansible: $PLAYBOOK (system: ${SYSTEM_ID:-auto}, profile: $PROFILE)"
-(cd "$ANSIBLE_DIR" && ansible-playbook $ANSIBLE_BECOME_FLAGS \
+
+# The fingerprint prompt is printed by sudo on the terminal, so the
+# playbook needs one to show it.
+if ! ( : < /dev/tty ) 2>/dev/null; then
+    echo "==> No terminal attached; skipping ansible (the prompt needs one)" >&2
+    exit 0
+fi
+
+# One sudo for the whole playbook.
+#
+# The playbook runs as root, so the tasks that need root are already
+# root and the ones that belong to the account drop to it explicitly.
+# Nothing authenticates twice, and no credential is cached: sudo keeps
+# its per-terminal record, and closing the terminal takes it away.
+(cd "$ANSIBLE_DIR" && sudo ansible-playbook \
+    -e "login_user=$USER" \
     "${ANSIBLE_EXTRA_VARS[@]}" \
     "${PLAYBOOK#"$ANSIBLE_DIR"/}")
