@@ -1,0 +1,5 @@
+[config]
+
+[templates.limusic]
+input_path = "~/.config/matugen/templates/limusic.css"
+output_path = "~/.config/limusic/matugen.css"

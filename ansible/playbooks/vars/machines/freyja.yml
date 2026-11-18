@@ -4,3 +4,5 @@ add:
     - iwlwifi-mvm-firmware
     - iwlbluetooth-firmware
     - cs9711-fingerprint
+  flatpak:
+    - community.pathofbuilding.PathOfBuilding

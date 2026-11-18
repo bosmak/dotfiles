@@ -489,6 +489,10 @@
   "notificationCompactMode": true,
   "mediaLyricsProviders": [
     {
+      "id": "youtubemusic",
+      "enabled": true
+    },
+    {
       "id": "betterlyrics",
       "enabled": true
     },
@@ -506,10 +510,6 @@
     },
     {
       "id": "lrclib",
-      "enabled": true
-    },
-    {
-      "id": "youtubemusic",
       "enabled": true
     }
   ],
@@ -714,5 +714,6 @@
         "syncPositionAcrossScreens": true
       }
     }
-  ]
+  ],
+  "bluetoothMprisEnabled": true
 }
