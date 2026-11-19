@@ -18,6 +18,11 @@ bindkey '^[[A' history-substring-search-up
 bindkey '^[[B' history-substring-search-down
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
+bindkey '^[[3~' delete-char
+bindkey '^[[5~' up-line-or-history
+bindkey '^[[6~' down-line-or-history
+bindkey '^[[H' beginning-of-line
+bindkey '^[[F' end-of-line
 
 # Snippets
 for file in "${XDG_CONFIG_HOME:-$HOME/.config}"/dots/*.zsh(N.); do
